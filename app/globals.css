@@ -1,26 +1,108 @@
 @import "tailwindcss";
 
+/*
+ * Zionankara design tokens — Dusty Pink theme v1.
+ * Source: Claude Design "Zionankara Fashion Homepage" → tokens/zionankara-tokens.css.
+ * Type sizes are --za-font-size-* here; the source file reused --za-text-body
+ * for both a colour and a size, so the size silently overrode the colour.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Color */
+  --za-ink: #111111;
+  --za-bg: #ffffff;
+  --za-accent: #a86b76;
+  --za-accent-soft: #e2b6bd;
+  --za-tint: #f7ecec;
+  --za-panel: #faf6f5;
+  --za-panel-border: #f0e4e4;
+  --za-text-body: #555555;
+  --za-text-muted: #6b6b6b;
+  --za-text-subtle: #8e8e8e;
+  --za-text-on-dark: #cfcfcf;
+  --za-border: #ececec;
+  --za-border-strong: #dddddd;
+  --za-error: #a3343f;
+
+  /* Type */
+  --za-font-display: var(--font-cormorant), Georgia, serif;
+  --za-font-body: var(--font-jost), system-ui, sans-serif;
+  --za-font-size-display: clamp(44px, 5vw, 88px);
+  --za-font-size-h2: clamp(36px, 4vw, 56px);
+  --za-font-size-h3: clamp(22px, 2vw, 32px);
+  --za-font-size-body-lg: 17px;
+  --za-font-size-body: 15px;
+  --za-font-size-small: 13px;
+  --za-font-size-label: 12px;
+  --za-tracking-label: 0.24em;
+  --za-tracking-button: 0.2em;
+  --za-leading-tight: 1;
+  --za-leading-body: 1.7;
+
+  /* Space & layout */
+  --za-container: 1360px;
+  --za-gutter: clamp(20px, 4vw, 56px);
+  --za-section-y: clamp(56px, 7vw, 112px);
+  --za-space-1: 8px;
+  --za-space-2: 14px;
+  --za-space-3: 20px;
+  --za-space-4: 28px;
+  --za-space-5: 40px;
+  --za-space-6: 56px;
+
+  /* Components */
+  --za-radius: 0;
+  --za-control-sm: 44px;
+  --za-control-md: 52px;
+  --za-control-lg: 56px;
+  --za-image-ratio: 4 / 5;
+  --za-ring: 0 0 0 2px #ffffff, 0 0 0 3px #111111;
 }
 
+/* Expose tokens as Tailwind utilities, e.g. bg-tint, text-accent, text-copy, font-display, text-h2, max-w-site. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-ink: var(--za-ink);
+  --color-background: var(--za-bg);
+  --color-accent: var(--za-accent);
+  --color-accent-soft: var(--za-accent-soft);
+  --color-tint: var(--za-tint);
+  --color-panel: var(--za-panel);
+  --color-panel-border: var(--za-panel-border);
+  --color-copy: var(--za-text-body);
+  --color-muted: var(--za-text-muted);
+  --color-subtle: var(--za-text-subtle);
+  --color-on-dark: var(--za-text-on-dark);
+  --color-line: var(--za-border);
+  --color-line-strong: var(--za-border-strong);
+  --color-error: var(--za-error);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--za-font-display);
+  --font-sans: var(--za-font-body);
+
+  --text-display: var(--za-font-size-display);
+  --text-display--line-height: var(--za-leading-tight);
+  --text-h2: var(--za-font-size-h2);
+  --text-h2--line-height: var(--za-leading-tight);
+  --text-h3: var(--za-font-size-h3);
+  --text-h3--line-height: 1.1;
+  --text-body-lg: var(--za-font-size-body-lg);
+  --text-body-lg--line-height: var(--za-leading-body);
+  --text-body: var(--za-font-size-body);
+  --text-body--line-height: var(--za-leading-body);
+  --text-small: var(--za-font-size-small);
+  --text-label: var(--za-font-size-label);
+
+  --tracking-label: var(--za-tracking-label);
+  --tracking-button: var(--za-tracking-button);
+
+  --container-site: var(--za-container);
+  --aspect-product: var(--za-image-ratio);
+
+  --shadow-ring: var(--za-ring);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--za-bg);
+  color: var(--za-ink);
+  font-family: var(--za-font-body);
+  font-weight: 300;
 }
