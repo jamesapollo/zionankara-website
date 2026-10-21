@@ -50,7 +50,7 @@ export default function Home() {
       </section>
 
       {/* Categories */}
-      <section id="categories" className="border-t border-line py-[clamp(56px,7vw,96px)]">
+      <section id="categories" className="border-t border-line pt-[clamp(56px,7vw,96px)] pb-[clamp(24px,3vw,40px)]">
         <div className="mx-auto mb-11 flex max-w-site flex-wrap items-end justify-between gap-6 px-(--za-gutter)">
           <h2 className={sectionTitle}>
             Best <em>collections</em>
@@ -80,7 +80,7 @@ export default function Home() {
       </section>
 
       {/* New arrivals */}
-      <section id="new" className="mx-auto max-w-site px-(--za-gutter) py-[clamp(56px,7vw,96px)]">
+      <section id="new" className="mx-auto max-w-site px-(--za-gutter) pt-[clamp(32px,4vw,56px)] pb-[clamp(56px,7vw,96px)]">
         <div className="mb-11 flex flex-wrap items-end justify-between gap-6">
           <div className="flex flex-col gap-3.5">
             <span className={eyebrow}>Just arrived</span>
