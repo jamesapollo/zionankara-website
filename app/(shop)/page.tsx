@@ -117,7 +117,7 @@ export default function Home() {
           ))}
         </div>
         <div className="mt-14 flex justify-center">
-          <ButtonLink href="/collections" variant="secondary" className="px-11">
+          <ButtonLink href="/collections" variant="secondary" pad="px-11 py-[17px]">
             Show more
           </ButtonLink>
         </div>
@@ -134,7 +134,7 @@ export default function Home() {
             Weddings, owambe, christenings and quiet dinners — wax-print pieces finished by hand, shipped worldwide.
           </p>
           <div>
-            <ButtonLink href="/collections/gowns" variant="on-dark" className="px-9">
+            <ButtonLink href="/collections/gowns" variant="on-dark" pad="px-9 py-[18px]">
               Shop the edit
             </ButtonLink>
           </div>

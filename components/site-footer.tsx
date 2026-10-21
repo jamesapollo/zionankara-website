@@ -6,7 +6,7 @@ const columns = [
   {
     title: "Shop",
     links: [
-      { href: "/collections?sort=new", label: "New in" },
+      { href: "/collections/new-in", label: "New in" },
       { href: "/collections/gowns", label: "Dresses" },
       { href: "/collections/two-piece-sets", label: "Two-piece sets" },
       { href: "/collections/fabrics", label: "Fabrics" },

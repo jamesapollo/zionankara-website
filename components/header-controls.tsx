@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { currencies, currencyLabels, type Currency } from "@/lib/currency";
 import { bagCount, setCurrency, useStore } from "@/lib/store";
 
@@ -25,6 +26,7 @@ export function CurrencySelect({ className = "" }: { className?: string }) {
 
 export function HeaderControls() {
   const { bag } = useStore();
+  const pathname = usePathname();
 
   return (
     <>
@@ -32,7 +34,7 @@ export function HeaderControls() {
       <Link href="/search" className="hidden hover:text-accent md:inline">
         Search
       </Link>
-      <Link href="/bag" className="hover:text-accent">
+      <Link href="/bag" aria-current={pathname === "/bag" ? "page" : undefined} className={pathname === "/bag" ? "text-accent" : "hover:text-accent"}>
         Bag ({bagCount(bag)})
       </Link>
     </>

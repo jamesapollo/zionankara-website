@@ -11,6 +11,9 @@ type ProductCardProps = {
   titleClassName?: string;
   showNote?: boolean;
   priceSize?: "md" | "lg";
+  showNewBadge?: boolean;
+  /** Load immediately; set for cards in the first visible row. */
+  eager?: boolean;
   sizes: string;
 };
 
@@ -20,6 +23,8 @@ export function ProductCard({
   titleClassName = "text-[22px]",
   showNote = false,
   priceSize = "md",
+  showNewBadge = false,
+  eager = false,
   sizes,
 }: ProductCardProps) {
   return (
@@ -30,8 +35,14 @@ export function ProductCard({
           alt={product.name}
           fill
           sizes={sizes}
+          loading={eager ? "eager" : "lazy"}
           className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.03]"
         />
+        {showNewBadge && product.isNew && (
+          <span className="absolute top-3.5 left-3.5 bg-white px-2.5 py-1.5 text-[11px] font-normal uppercase tracking-[0.2em]">
+            New
+          </span>
+        )}
         {product.wasKes && (
           <span className="absolute top-3.5 right-3.5 bg-accent px-2.5 py-1.5 text-[11px] font-medium uppercase tracking-[0.16em] text-white">
             {discountLabel(product.priceKes, product.wasKes)}
