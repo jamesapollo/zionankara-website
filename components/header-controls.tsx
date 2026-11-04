@@ -30,8 +30,8 @@ export function HeaderControls() {
 
   return (
     <>
-      <CurrencySelect className="hidden md:block" />
-      <Link href="/search" className="hidden hover:text-accent md:inline">
+      <CurrencySelect className="max-nav:hidden" />
+      <Link href="/search" className="hover:text-accent max-nav:hidden">
         Search
       </Link>
       <Link href="/bag" aria-current={pathname === "/bag" ? "page" : undefined} className={pathname === "/bag" ? "text-accent" : "hover:text-accent"}>

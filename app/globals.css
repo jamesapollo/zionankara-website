@@ -106,3 +106,8 @@ body {
   font-family: var(--za-font-body);
   font-weight: 300;
 }
+
+/* Header switches to its mobile layout at 860px and below. */
+@theme {
+  --breakpoint-nav: 861px;
+}

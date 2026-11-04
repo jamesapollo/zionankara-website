@@ -1,4 +1,8 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { mailHref, socialLinks, telHref, whatsappHref } from "@/lib/contact";
+import { getContactOrNull } from "@/lib/erp/header-data";
+import type { ContactDetails } from "@/lib/erp/types";
 import { Logo } from "./logo";
 import { NewsletterForm } from "./newsletter-form";
 
@@ -21,17 +25,41 @@ const columns = [
       { href: "/contact", label: "Contact" },
     ],
   },
-  {
-    title: "Follow",
-    links: [
-      { href: "https://instagram.com", label: "Instagram" },
-      { href: "https://tiktok.com", label: "TikTok" },
-      { href: "https://pinterest.com", label: "Pinterest" },
-    ],
-  },
 ];
 
+type FooterLink = { href: string; label: string; external?: boolean };
+
+/** Client care and Follow columns; ERP contact fields are appended only when set. */
+function footerColumns(contact: ContactDetails | null) {
+  const phone = contact?.phone?.trim();
+  const email = contact?.email?.trim();
+  const contactLinks: FooterLink[] = [
+    ...(telHref(phone) ? [{ href: telHref(phone)!, label: phone!, external: true }] : []),
+    ...(whatsappHref(contact?.whatsapp) ? [{ href: whatsappHref(contact?.whatsapp)!, label: "WhatsApp", external: true }] : []),
+    ...(mailHref(email) ? [{ href: mailHref(email)!, label: email!, external: true }] : []),
+  ];
+  const follow: FooterLink[] = socialLinks(contact).map((s) => ({ ...s, external: true }));
+  const [shop, care] = columns;
+  return [
+    shop,
+    { ...care, links: [...care.links, ...contactLinks] },
+    ...(follow.length > 0 ? [{ title: "Follow", links: follow }] : []),
+  ] as { title: string; links: FooterLink[] }[];
+}
+
+async function LoadedFooter() {
+  return <FooterMarkup contact={await getContactOrNull()} />;
+}
+
 export function SiteFooter() {
+  return (
+    <Suspense fallback={<FooterMarkup contact={null} />}>
+      <LoadedFooter />
+    </Suspense>
+  );
+}
+
+function FooterMarkup({ contact }: { contact: ContactDetails | null }) {
   return (
     <footer className="bg-ink text-on-dark">
       <div className="mx-auto flex max-w-site flex-col gap-14 px-(--za-gutter) pt-[clamp(56px,6vw,80px)] pb-8">
@@ -41,13 +69,19 @@ export function SiteFooter() {
             <p className="text-body leading-[1.7]">Letters on new collections and private sales. Rarely, and beautifully.</p>
             <NewsletterForm />
           </div>
-          {columns.map((column) => (
+          {footerColumns(contact).map((column) => (
             <div key={column.title} className="flex flex-col gap-3.5 text-body">
               <span className="mb-1.5 text-label uppercase tracking-[0.22em] text-white">{column.title}</span>
               {column.links.map((link) => (
-                <Link key={link.label} href={link.href} className="hover:text-accent-soft">
-                  {link.label}
-                </Link>
+                link.external ? (
+                  <a key={link.label} href={link.href} {...(link.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})} className="hover:text-accent-soft">
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link key={link.label} href={link.href} className="hover:text-accent-soft">
+                    {link.label}
+                  </Link>
+                )
               ))}
             </div>
           ))}

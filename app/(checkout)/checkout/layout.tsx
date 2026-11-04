@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { AnnouncementBar } from "@/components/announcement-bar";
 import { CurrencySelect } from "@/components/header-controls";
 import { Logo } from "@/components/logo";
 
@@ -7,7 +6,6 @@ import { Logo } from "@/components/logo";
 export default function CheckoutLayout({ children }: LayoutProps<"/checkout">) {
   return (
     <>
-      <AnnouncementBar />
       <header className="border-b border-line bg-white">
         <div className="mx-auto grid max-w-site grid-cols-[1fr_auto_1fr] items-center gap-6 px-(--za-gutter) py-[18px]">
           <Link href="/bag" className="text-[clamp(11px,1.1vw,13px)] font-normal uppercase tracking-[0.16em] whitespace-nowrap hover:text-accent">
