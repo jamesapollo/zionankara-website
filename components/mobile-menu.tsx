@@ -11,7 +11,7 @@ type MobileMenuProps = {
   socials: { label: string; href: string }[];
 };
 
-const itemClass = "border-b border-line py-4 hover:text-accent";
+const itemClass = "border-b border-[#F1F1F1] py-3.5 text-[13px] uppercase tracking-[0.18em] hover:text-accent";
 
 export function MobileMenu({ links, categories, socials }: MobileMenuProps) {
   const [open, setOpen] = useState(false);
@@ -31,24 +31,36 @@ export function MobileMenu({ links, categories, socials }: MobileMenuProps) {
           setOpen(!isOpen);
           setOpenedAt(pathname);
         }}
-        className="flex cursor-pointer items-center gap-2.5 uppercase hover:text-accent"
+        className="flex cursor-pointer items-center gap-2.5 text-[12px] uppercase tracking-[0.16em] hover:text-accent"
       >
-        <svg width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true">
-          {isOpen ? <path d="M2 1l14 12M16 1L2 13" /> : <path d="M0 1h18M0 7h18M0 13h18" />}
-        </svg>
+        {isOpen ? (
+          <span aria-hidden className="w-[22px] text-center font-display text-[26px] leading-none">
+            ×
+          </span>
+        ) : (
+          <svg width="22" height="11" viewBox="0 0 22 11" fill="none" stroke="currentColor" strokeWidth="1" aria-hidden="true">
+            <path d="M0 .5h22M0 5.5h22M0 10.5h22" />
+          </svg>
+        )}
         Menu
       </button>
       {isOpen && (
-        <div id="mobile-menu" className="absolute inset-x-0 top-full max-h-[80dvh] overflow-y-auto border-b border-line bg-white">
-          <nav aria-label="Mobile" className="flex flex-col px-(--za-gutter) py-2">
+        <div id="mobile-menu" className="absolute inset-x-0 top-full max-h-[calc(100dvh-70px)] min-h-[60vh] overflow-y-auto border-t border-b border-line bg-white">
+          <nav aria-label="Mobile" className="flex flex-col px-[clamp(20px,6vw,40px)] pt-2 pb-10">
             {links.map((link) => (
-              <Link key={link.label} href={link.href} onClick={close} className={itemClass}>
+              <Link
+                key={link.label}
+                href={link.href}
+                onClick={close}
+                aria-current={link.href === "/" && pathname === "/" ? "page" : undefined}
+                className={`${itemClass} ${link.href === "/" && pathname === "/" ? "text-accent" : ""}`}
+              >
                 {link.label}
               </Link>
             ))}
             {categories.length > 0 && (
               <>
-                <span className="pt-5 pb-1 text-label tracking-[0.22em] text-muted uppercase">Shop</span>
+                <span className="pt-7 pb-1.5 text-[11px] tracking-[0.28em] text-accent uppercase">Shop</span>
                 {categories.map((item) => (
                   <Link key={item.href} href={item.href} onClick={close} className={`${itemClass} ${item.accent ? "text-accent" : ""}`}>
                     {item.label}
@@ -64,7 +76,7 @@ export function MobileMenu({ links, categories, socials }: MobileMenuProps) {
               <CurrencySelect />
             </div>
             {socials.length > 0 && (
-              <ul className="flex flex-wrap gap-x-5 gap-y-2 border-t border-line py-4 text-small text-muted">
+              <ul className="flex flex-wrap gap-x-6 gap-y-2 pt-7 text-[12px] tracking-[0.16em] text-muted uppercase">
                 {socials.map((s) => (
                   <li key={s.label}>
                     <a href={s.href} target="_blank" rel="noopener noreferrer" className="hover:text-accent">
