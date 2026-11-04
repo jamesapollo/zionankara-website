@@ -26,7 +26,9 @@ import type {
 type Found<T> = { kind: "found"; data: T };
 type Moved = { kind: "moved"; slug: string };
 type Missing = { kind: "missing" };
-type Lookup<T> = Found<T> | Moved | Missing;
+/** The ERP rejected the query (422), e.g. an option value of another store. Cached as a value so Next.js does not report it as a cache error. */
+type Invalid = { kind: "invalid" };
+type Lookup<T> = Found<T> | Moved | Missing | Invalid;
 
 export type ListParams = {
   category?: string;
@@ -79,6 +81,7 @@ async function lookup<T>(path: string): Promise<Lookup<T>> {
 function resolve<T>(result: Lookup<T>, routeFor: (slug: string) => string): T {
   if (result.kind === "found") return result.data;
   if (result.kind === "moved") permanentRedirect(routeFor(result.slug));
+  if (result.kind === "invalid") throw new ErpError("ERP rejected the query", 422);
   notFound();
 }
 
@@ -124,6 +127,7 @@ async function fetchProducts(params: ListParams): Promise<Lookup<Paginated<Produ
     return { kind: "found", data: await read<Paginated<ProductListItem>>(`/api/v1/storefront/products${qs(params)}`) };
   } catch (e) {
     if (e instanceof ErpError && e.status === 404) return { kind: "missing" };
+    if (e instanceof ErpError && e.status === 422) return { kind: "invalid" };
     throw e;
   }
 }
@@ -163,4 +167,11 @@ export async function getProductFilters(params: FilterParams = {}): Promise<Prod
 
 export async function getProduct(slug: string): Promise<ProductDetail> {
   return resolve(await fetchProduct(slug), productHref);
+}
+
+/** Like listProducts, but a missing category yields null instead of notFound(). */
+export async function listProductsOrNull(params: ListParams = {}): Promise<Paginated<ProductListItem> | null> {
+  const res = await fetchProducts(params);
+  if (res.kind === "invalid") throw new ErpError("ERP rejected the query", 422);
+  return res.kind === "found" ? res.data : null;
 }

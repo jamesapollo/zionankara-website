@@ -7,9 +7,13 @@ type CollectionPageProps = {
   crumb?: string;
   initialCategory?: string;
   initialSort?: "featured" | "new";
+  /** ERP pages: full breadcrumb trail, intro text and server-rendered results replace the local browser. */
+  trail?: { label: string; href?: string }[];
+  intro?: string;
+  children?: ReactNode;
 };
 
-export function CollectionPage({ title, crumb, initialCategory, initialSort }: CollectionPageProps) {
+export function CollectionPage({ title, crumb, initialCategory, initialSort, trail, intro, children }: CollectionPageProps) {
   return (
     <>
       <section className="bg-tint">
@@ -17,21 +21,24 @@ export function CollectionPage({ title, crumb, initialCategory, initialSort }: C
           <div className="flex flex-col gap-[18px]">
             <Breadcrumbs
               items={
-                crumb
+                trail ??
+                (crumb
                   ? [{ label: "Home", href: "/" }, { label: "Collections", href: "/collections" }, { label: crumb }]
-                  : [{ label: "Home", href: "/" }, { label: "Collections" }]
+                  : [{ label: "Home", href: "/" }, { label: "Collections" }])
               }
             />
             <h1 className="font-display text-[clamp(44px,5.5vw,80px)] leading-none">{title}</h1>
           </div>
           <p className="max-w-[420px] text-base leading-[1.7] text-pretty text-copy">
-            Gowns, sets and everyday pieces in authentic African wax prints — cut in small batches, shipped worldwide.
+            {intro ?? "Gowns, sets and everyday pieces in authentic African wax prints — cut in small batches, shipped worldwide."}
           </p>
         </div>
       </section>
       <section className="mx-auto max-w-site px-(--za-gutter) pt-[clamp(32px,4vw,56px)] pb-[clamp(64px,8vw,112px)]">
-        {/* Keyed so moving between collections resets the filters to that collection. */}
-        <CollectionBrowser key={`${initialCategory}-${initialSort}`} initialCategory={initialCategory} initialSort={initialSort} />
+        {children ?? (
+          // Keyed so moving between collections resets the filters to that collection.
+          <CollectionBrowser key={`${initialCategory}-${initialSort}`} initialCategory={initialCategory} initialSort={initialSort} />
+        )}
       </section>
     </>
   );

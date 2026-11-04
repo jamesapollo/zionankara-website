@@ -57,3 +57,18 @@ describe("catalogue readers", () => {
     );
   });
 });
+
+describe("listProductsOrNull", () => {
+  it("returns null for a missing category", async () => {
+    const { listProductsOrNull } = await import("./queries");
+    fetchMock.mockResolvedValueOnce(json({ message: "Not found." }, 404));
+    expect(await listProductsOrNull({ category: "nope" })).toBeNull();
+  });
+});
+
+describe("422 from the ERP", () => {
+  it("surfaces as an ErpError(422) from the uncached wrapper", async () => {
+    fetchMock.mockResolvedValue(json({ message: "invalid" }, 422));
+    await expect(listProducts({ category: "gowns", option_values: [999] })).rejects.toMatchObject({ name: "ErpError", status: 422 });
+  });
+});
