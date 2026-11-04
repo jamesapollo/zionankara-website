@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
     agentFeedback: true,
   },
   cacheComponents: true,
+  images: {
+    remotePatterns: [new URL("https://media.zionankara.co.ke/**")],
+  },
   partialPrefetching: true,
   turbopack: {
     rules: {
