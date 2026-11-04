@@ -4,6 +4,8 @@ import type { ErpRedirect } from "./types";
 
 /** Placeholder client IP for requests with no shopper (cached reads, build time). */
 export const NO_SHOPPER_IP = "0.0.0.0";
+/** Upper bound for one ERP call, so a stalled ERP cannot hang a render, prerender or POST. */
+export const ERP_TIMEOUT_MS = 8_000;
 const LOOPBACK_IP = "127.0.0.1";
 /** Addresses we never forward as a shopper IP. */
 const UNSPECIFIED = new Set(["", "::1", "::", "0.0.0.0", "::ffff:0.0.0.0"]);
@@ -83,9 +85,18 @@ async function signedFetch(
       headers,
       body: body === "" ? undefined : body,
       cache: "no-store",
+      signal: AbortSignal.timeout(ERP_TIMEOUT_MS),
     });
   } catch (cause) {
-    throw new ErpError(`ERP request failed: ${(cause as Error).message}`, 0, "network");
+    const name = (cause as Error).name;
+    const timedOut = name === "TimeoutError" || name === "AbortError";
+    throw new ErpError(
+      timedOut
+        ? `ERP request timed out after ${ERP_TIMEOUT_MS}ms`
+        : `ERP request failed: ${(cause as Error).message}`,
+      0,
+      "network",
+    );
   }
 }
 

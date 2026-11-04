@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ErpError, erpGet, erpPost, shopperIp } from "./client";
+import { ERP_TIMEOUT_MS, ErpError, erpGet, erpPost, shopperIp } from "./client";
 
 const fetchMock = vi.fn();
 
@@ -45,6 +45,31 @@ describe("erpGet", () => {
     const err = (await erpGet("/x").catch((e) => e)) as ErpError;
     expect(err).toBeInstanceOf(ErpError);
     expect(err.status).toBe(0);
+  });
+
+  it("maps an abort/timeout rejection to a network ErpError", async () => {
+    fetchMock.mockRejectedValue(new DOMException("The operation timed out.", "TimeoutError"));
+    const err = (await erpGet("/x").catch((e) => e)) as ErpError;
+    expect(err).toBeInstanceOf(ErpError);
+    expect([err.status, err.kind]).toEqual([0, "network"]);
+    expect(err.message).toMatch(/timed out/);
+  });
+
+  it("aborts a never-resolving fetch via a timeout signal", async () => {
+    const ctl = new AbortController();
+    const spy = vi.spyOn(AbortSignal, "timeout").mockReturnValue(ctl.signal);
+    fetchMock.mockImplementation(
+      (_url: URL, init: RequestInit) =>
+        new Promise((_res, rej) =>
+          init.signal!.addEventListener("abort", () => rej(new DOMException("aborted", "AbortError"))),
+        ),
+    );
+    const pending = erpGet("/x").catch((e) => e);
+    ctl.abort();
+    const err = (await pending) as ErpError;
+    expect(spy).toHaveBeenCalledWith(ERP_TIMEOUT_MS);
+    expect([err.status, err.kind]).toEqual([0, "network"]);
+    spy.mockRestore();
   });
 
   it("throws a config ErpError when ERP_STOREFRONT_HOST is unset", async () => {
