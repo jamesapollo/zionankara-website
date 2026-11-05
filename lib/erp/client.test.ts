@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ERP_TIMEOUT_MS, ErpError, erpGet, erpPost, shopperIp } from "./client";
+import { ERP_TIMEOUT_MS, ErpError, erpConfigured, erpGet, erpPost, shopperIp } from "./client";
 
 const fetchMock = vi.fn();
 
@@ -104,10 +104,32 @@ describe("erpGet", () => {
   });
 });
 
+describe("erpGet misconfiguration", () => {
+  it('turns a 404 "Store not found." into a config error', async () => {
+    fetchMock.mockResolvedValue(json({ message: "Store not found." }, 404));
+    await expect(erpGet("/api/v1/storefront/store")).rejects.toMatchObject({ kind: "config", status: 404 });
+  });
+  it("keeps other 404s as plain http errors", async () => {
+    fetchMock.mockResolvedValue(json({ message: "Product not found." }, 404));
+    await expect(erpGet("/x")).rejects.toMatchObject({ kind: "http", status: 404 });
+  });
+});
+
+describe("erpConfigured", () => {
+  it("is true only when URL, secret and host are all set", () => {
+    expect(erpConfigured()).toBe(true);
+    for (const name of ["ERP_API_URL", "STOREFRONT_SIGNING_SECRET", "ERP_STOREFRONT_HOST"]) {
+      vi.stubEnv(name, "  ");
+      expect(erpConfigured()).toBe(false);
+      vi.stubEnv(name, "x");
+    }
+  });
+});
+
 describe("erpPost", () => {
   it("returns status and body for 422 and 429 without throwing", async () => {
     fetchMock.mockResolvedValue(json({ message: "Too Many Attempts." }, 429));
-    const res = await erpPost("/p", { a: 1 }, { clientIp: "203.0.113.9", host: "req.example.test" });
+    const res = await erpPost("/p", { a: 1 }, { clientIp: "203.0.113.9" });
     expect(res).toEqual({ status: 429, data: { message: "Too Many Attempts." } });
     const [, init] = fetchMock.mock.calls[0];
     const h = new Headers(init.headers);
@@ -117,13 +139,10 @@ describe("erpPost", () => {
     expect(init.cache).toBe("no-store");
   });
 
-  it("falls back to the request host when the env var is unset", async () => {
+  it("throws a config error when ERP_STOREFRONT_HOST is unset (no request-host fallback)", async () => {
     vi.stubEnv("ERP_STOREFRONT_HOST", "");
-    fetchMock.mockResolvedValue(json({}, 201));
-    await erpPost("/p", {}, { clientIp: "127.0.0.1", host: "req.example.test" });
-    expect(new Headers(fetchMock.mock.calls[0][1].headers).get("X-Storefront-Host")).toBe(
-      "req.example.test",
-    );
+    await expect(erpPost("/p", {}, { clientIp: "127.0.0.1" })).rejects.toMatchObject({ kind: "config" });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("throws ErpError on 5xx and network failure", async () => {
@@ -135,7 +154,7 @@ describe("erpPost", () => {
 
   it("never sends an unspecified IP", async () => {
     fetchMock.mockResolvedValue(json({}, 201));
-    await erpPost("/p", {}, { clientIp: "0.0.0.0", host: "h.test" });
+    await erpPost("/p", {}, { clientIp: "0.0.0.0" });
     expect(new Headers(fetchMock.mock.calls[0][1].headers).get("X-Storefront-Client-IP")).toBe(
       "127.0.0.1",
     );

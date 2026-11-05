@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyEnquiryResponse, humaniseSlug, validateEnquiry, GENERIC_FAILURE, RATE_LIMITED } from "./enquiry";
+import { classifyEnquiryResponse, enquiryBody, HONEYPOT_FIELD, humaniseSlug, validateEnquiry, GENERIC_FAILURE, RATE_LIMITED } from "./enquiry";
 
 const ok = { name: "Amara Okafor", email: "amara@example.com", topic: "Order enquiry", message: "Hello there, a question." };
 const topics = ["Order enquiry", "Press"];
@@ -64,4 +64,16 @@ describe("classifyEnquiryResponse", () => {
 describe("humaniseSlug", () => {
   it("turns a slug into words", () => expect(humaniseSlug("kente-wrap-dress")).toBe("kente wrap dress"));
   it("is empty for blank input", () => expect(humaniseSlug("  ")).toBe(""));
+});
+
+describe("enquiryBody", () => {
+  it("maps the obscure honeypot form field to the API's `website` key", () => {
+    const form = new FormData();
+    form.set(HONEYPOT_FIELD, "http://spam.example");
+    form.set("website", "autofilled by a browser");
+    expect(enquiryBody(ok, form).website).toBe("http://spam.example");
+  });
+  it("sends an empty website for real shoppers and omits an empty topic", () => {
+    expect(enquiryBody({ ...ok, topic: "" }, new FormData())).toEqual({ ...ok, topic: undefined, website: "" });
+  });
 });

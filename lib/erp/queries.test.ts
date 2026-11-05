@@ -39,6 +39,11 @@ describe("catalogue readers", () => {
     await expect(getCategory("frocks")).rejects.toThrow("REDIRECT:/collections/dresses");
   });
 
+  it('does not treat a 404 "Store not found." as a missing product', async () => {
+    fetchMock.mockResolvedValue(json({ message: "Store not found." }, 404));
+    await expect(getProduct("x")).rejects.toMatchObject({ kind: "config" });
+  });
+
   it("maps a 404 to notFound()", async () => {
     fetchMock.mockResolvedValue(json({ message: "Not found." }, 404));
     await expect(getProduct("nope")).rejects.toThrow("NOT_FOUND");

@@ -10,6 +10,8 @@ const LOOPBACK_IP = "127.0.0.1";
 /** Addresses we never forward as a shopper IP. */
 const UNSPECIFIED = new Set(["", "::1", "::", "0.0.0.0", "::ffff:0.0.0.0"]);
 
+const STORE_NOT_FOUND = "Store not found.";
+
 export type ErpErrorKind = "config" | "network" | "http";
 
 /** Thrown for config problems, network failures and non-2xx reads. `status` is 0 when no response arrived. */
@@ -28,17 +30,20 @@ function env(name: string): string {
   return process.env[name]?.trim() ?? "";
 }
 
-function config(host: string | undefined) {
+/** True when ERP_API_URL, STOREFRONT_SIGNING_SECRET and ERP_STOREFRONT_HOST are all set. */
+export function erpConfigured(): boolean {
+  return Boolean(env("ERP_API_URL") && env("STOREFRONT_SIGNING_SECRET") && env("ERP_STOREFRONT_HOST"));
+}
+
+function config() {
   const baseUrl = env("ERP_API_URL");
   const secret = env("STOREFRONT_SIGNING_SECRET");
   if (!baseUrl || !secret) {
     throw new ErpError("ERP_API_URL and STOREFRONT_SIGNING_SECRET must be set", 0, "config");
   }
-  const resolvedHost = env("ERP_STOREFRONT_HOST") || host?.trim() || "";
-  if (!resolvedHost) {
-    throw new ErpError("ERP_STOREFRONT_HOST must be set", 0, "config");
-  }
-  return { baseUrl, secret, host: resolvedHost };
+  const host = env("ERP_STOREFRONT_HOST");
+  if (!host) throw new ErpError("ERP_STOREFRONT_HOST must be set", 0, "config");
+  return { baseUrl, secret, host };
 }
 
 function safeIp(ip: string): string {
@@ -57,9 +62,8 @@ async function signedFetch(
   method: "GET" | "POST",
   body: string,
   clientIp: string,
-  host: string | undefined,
 ): Promise<Response> {
-  const cfg = config(host);
+  const cfg = config();
   const url = new URL(path, cfg.baseUrl);
   const timestamp = Math.floor(Date.now() / 1000);
   const signature = signRequest({
@@ -116,8 +120,14 @@ export async function erpGet<T>(
   path: string,
   opts: { clientIp?: string } = {},
 ): Promise<T | ErpRedirect> {
-  const res = await signedFetch(path, "GET", "", opts.clientIp ?? NO_SHOPPER_IP, undefined);
-  if (!res.ok) throw new ErpError(`ERP responded ${res.status}`, res.status);
+  const res = await signedFetch(path, "GET", "", opts.clientIp ?? NO_SHOPPER_IP);
+  if (!res.ok) {
+    // An unknown storefront host is a deployment misconfiguration, not a missing page: never cache it as notFound.
+    if (res.status === 404 && ((await readJson(res)) as { message?: unknown } | null)?.message === STORE_NOT_FOUND) {
+      throw new ErpError("ERP does not recognise this storefront host (check ERP_STOREFRONT_HOST)", 404, "config");
+    }
+    throw new ErpError(`ERP responded ${res.status}`, res.status);
+  }
   const json = (await readJson(res)) as T | ErpRedirect | null;
   if (json === null) throw new ErpError("ERP returned an unreadable body", res.status);
   return json;
@@ -125,15 +135,14 @@ export async function erpGet<T>(
 
 /**
  * Signed JSON POST for a shopper action. Does not throw on 4xx (422/429 come back as status + body);
- * throws ErpError on 5xx and network failure. `host` is the request host, used only when
- * ERP_STOREFRONT_HOST is unset. An unspecified clientIp is replaced with 127.0.0.1.
+ * throws ErpError on 5xx and network failure. An unspecified clientIp is replaced with 127.0.0.1.
  */
 export async function erpPost<T>(
   path: string,
   body: unknown,
-  opts: { clientIp: string; host?: string },
+  opts: { clientIp: string },
 ): Promise<{ status: number; data: T }> {
-  const res = await signedFetch(path, "POST", JSON.stringify(body), safeIp(opts.clientIp), opts.host);
+  const res = await signedFetch(path, "POST", JSON.stringify(body), safeIp(opts.clientIp));
   if (res.status >= 500) throw new ErpError(`ERP responded ${res.status}`, res.status);
   return { status: res.status, data: (await readJson(res)) as T };
 }

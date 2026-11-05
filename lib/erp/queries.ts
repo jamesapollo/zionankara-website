@@ -6,7 +6,6 @@ import type {
   CategoryDetail,
   CategoryNode,
   ErpRedirect,
-  ErpStore,
   NavItem,
   Paginated,
   ProductDetail,
@@ -73,7 +72,7 @@ async function lookup<T>(path: string): Promise<Lookup<T>> {
     if (isRedirect(res)) return { kind: "moved", slug: res.redirect.slug };
     return { kind: "found", data: res.data };
   } catch (e) {
-    if (e instanceof ErpError && e.status === 404) return { kind: "missing" };
+    if (e instanceof ErpError && e.status === 404 && e.kind === "http") return { kind: "missing" };
     throw e;
   }
 }
@@ -90,13 +89,6 @@ export const categoryHref = (slug: string) => `/collections/${encodeURIComponent
 export const productHref = (slug: string) => `/products/${encodeURIComponent(slug)}`;
 
 // --- cached fetchers -------------------------------------------------------
-
-export async function getStore(): Promise<ErpStore> {
-  "use cache";
-  cacheLife({ stale: 300, revalidate: 300, expire: 3600 });
-  cacheTag("store");
-  return (await read<{ data: ErpStore }>("/api/v1/storefront/store")).data;
-}
 
 export async function getCategoryNav(): Promise<NavItem[]> {
   "use cache";
@@ -126,7 +118,7 @@ async function fetchProducts(params: ListParams): Promise<Lookup<Paginated<Produ
   try {
     return { kind: "found", data: await read<Paginated<ProductListItem>>(`/api/v1/storefront/products${qs(params)}`) };
   } catch (e) {
-    if (e instanceof ErpError && e.status === 404) return { kind: "missing" };
+    if (e instanceof ErpError && e.status === 404 && e.kind === "http") return { kind: "missing" };
     if (e instanceof ErpError && e.status === 422) return { kind: "invalid" };
     throw e;
   }
@@ -139,7 +131,7 @@ async function fetchFilters(params: FilterParams): Promise<Lookup<ProductFilters
   try {
     return { kind: "found", data: await read<ProductFilters>(`/api/v1/storefront/product-filters${qs(params)}`) };
   } catch (e) {
-    if (e instanceof ErpError && e.status === 404) return { kind: "missing" };
+    if (e instanceof ErpError && e.status === 404 && e.kind === "http") return { kind: "missing" };
     throw e;
   }
 }

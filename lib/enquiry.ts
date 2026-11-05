@@ -66,3 +66,12 @@ export function classifyEnquiryResponse(status: number, body: unknown): EnquiryS
 export function humaniseSlug(slug: string): string {
   return slug.trim().replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
 }
+
+/** Form field name for the honeypot: deliberately unlike "website" so browser autofill leaves it alone. */
+export const HONEYPOT_FIELD = "hp_company_url_x";
+
+/** The POST body for /enquiries; the honeypot form field is sent as the API's `website`. */
+export function enquiryBody(values: EnquiryInput, form: FormData) {
+  const trap = form.get(HONEYPOT_FIELD);
+  return { ...values, topic: values.topic || undefined, website: typeof trap === "string" ? trap : "" };
+}

@@ -50,10 +50,15 @@ describe("getCategoryRowItems", () => {
       { href: "/collections/sale", label: "Sale", accent: true },
     ]);
   });
-  it("under erp returns [] on failure", async () => {
+  it("under erp falls back to a single Collections link on failure", async () => {
     vi.stubEnv("CATALOGUE_SOURCE", "erp");
     erpGet.mockRejectedValue(new Error("down"));
-    await expect(getCategoryRowItems()).resolves.toEqual([]);
+    await expect(getCategoryRowItems()).resolves.toEqual([{ href: "/collections", label: "Collections" }]);
+  });
+  it("under erp falls back to a single Collections link when the nav is empty", async () => {
+    vi.stubEnv("CATALOGUE_SOURCE", "erp");
+    erpGet.mockResolvedValue({ data: [] });
+    await expect(getCategoryRowItems()).resolves.toEqual([{ href: "/collections", label: "Collections" }]);
   });
 });
 

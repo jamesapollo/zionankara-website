@@ -37,19 +37,23 @@ async function fetchContact(): Promise<ContactDetails | null> {
   }
 }
 
+/** Keeps desktop browsing alive when the ERP nav is empty or unavailable. */
+const COLLECTIONS_ONLY: CategoryRowItem[] = [{ href: "/collections", label: "Collections" }];
+
 async function fetchNav(): Promise<CategoryRowItem[]> {
   "use cache";
   cacheLife({ stale: 300, revalidate: 300, expire: 3600 });
   cacheTag("category-nav");
   try {
-    return ((await erpGet<{ data: NavItem[] }>("/api/v1/storefront/category-nav")) as { data: NavItem[] }).data.map((item) => ({
+    const items = ((await erpGet<{ data: NavItem[] }>("/api/v1/storefront/category-nav")) as { data: NavItem[] }).data.map((item) => ({
       href: categoryHref(item.slug),
       label: item.name,
       accent: item.kind === "on_sale",
     }));
+    return items.length > 0 ? items : COLLECTIONS_ONLY;
   } catch (error) {
     reportOnce("category nav", error);
-    return [];
+    return COLLECTIONS_ONLY;
   }
 }
 
@@ -58,7 +62,7 @@ export function getContactOrNull(): Promise<ContactDetails | null> {
   return fetchContact();
 }
 
-/** Local categories (Sale omitted) under `local`; ERP nav under `erp`, empty if it fails. */
+/** Local categories (Sale omitted) under `local`; ERP nav under `erp`, a single Collections link if it fails or is empty. */
 export async function getCategoryRowItems(): Promise<CategoryRowItem[]> {
   if (catalogueSource() === "local") return localCategoryRow();
   return fetchNav();
