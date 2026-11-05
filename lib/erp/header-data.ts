@@ -37,7 +37,7 @@ async function fetchContact(): Promise<ContactDetails | null> {
   }
 }
 
-/** Keeps desktop browsing alive when the ERP nav is empty or unavailable. */
+/** Keeps desktop browsing alive when the ERP nav is unavailable (the store may well have categories). */
 const COLLECTIONS_ONLY: CategoryRowItem[] = [{ href: "/collections", label: "Collections" }];
 
 async function fetchNav(): Promise<CategoryRowItem[]> {
@@ -50,7 +50,8 @@ async function fetchNav(): Promise<CategoryRowItem[]> {
       label: item.name,
       accent: item.kind === "on_sale",
     }));
-    return items.length > 0 ? items : COLLECTIONS_ONLY;
+    // No categories set in the ERP: an empty list hides the row rather than pointing at an empty shop.
+    return items;
   } catch (error) {
     reportOnce("category nav", error);
     return COLLECTIONS_ONLY;
@@ -62,7 +63,7 @@ export function getContactOrNull(): Promise<ContactDetails | null> {
   return fetchContact();
 }
 
-/** Local categories (Sale omitted) under `local`; ERP nav under `erp`, a single Collections link if it fails or is empty. */
+/** Local categories (Sale omitted) under `local`; ERP nav under `erp` (empty hides the row), a single Collections link if the ERP fails. */
 export async function getCategoryRowItems(): Promise<CategoryRowItem[]> {
   if (catalogueSource() === "local") return localCategoryRow();
   return fetchNav();

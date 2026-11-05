@@ -37,6 +37,14 @@ With or without `CATALOGUE_SOURCE=erp`, these always come from the ERP when conf
 
 `CATALOGUE_SOURCE=erp` switches the home sections, collections, category, product pages and the category row to ERP data. Under `erp`, the bag and checkout show "Online ordering is coming soon".
 
+### Category row under `erp`
+
+The desktop category row below the header shows the category navigation set in the ERP dashboard.
+
+- **The store has no categories:** the row is hidden, and the mobile menu leaves out its category list. The footer's Shop column shows a single **Collections** link, and the home page buttons still lead to the shop. The page may shift up by the row's height once the header finishes loading, because space is reserved for the row while it loads.
+- **The ERP is unreachable:** the row shows a single **Collections** link, so shoppers can still browse.
+- Changes in the dashboard show up within about 5 minutes (see Caching).
+
 ### Before switching CATALOGUE_SOURCE to erp
 
 - [ ] The ERP env (`ERP_API_URL`, `STOREFRONT_SIGNING_SECRET`, `ERP_STOREFRONT_HOST`) is set in Vercel **Production**. `ERP_STOREFRONT_HOST` is the verified live domain. Send one real enquiry from a preview deployment that uses the Production env before promoting.

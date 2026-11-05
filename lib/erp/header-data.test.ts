@@ -55,10 +55,10 @@ describe("getCategoryRowItems", () => {
     erpGet.mockRejectedValue(new Error("down"));
     await expect(getCategoryRowItems()).resolves.toEqual([{ href: "/collections", label: "Collections" }]);
   });
-  it("under erp falls back to a single Collections link when the nav is empty", async () => {
+  it("under erp returns no items (row hidden) when the store has no categories", async () => {
     vi.stubEnv("CATALOGUE_SOURCE", "erp");
     erpGet.mockResolvedValue({ data: [] });
-    await expect(getCategoryRowItems()).resolves.toEqual([{ href: "/collections", label: "Collections" }]);
+    await expect(getCategoryRowItems()).resolves.toEqual([]);
   });
 });
 
