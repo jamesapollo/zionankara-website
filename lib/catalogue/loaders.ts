@@ -1,7 +1,7 @@
 import "server-only";
 import { connection } from "next/server";
 import { getCategory, getCategoryNav, getCategoryTree, getProductFilters, listProducts, listProductsOrNull } from "@/lib/erp/queries";
-import { cardFromErp, orderSections } from "./map";
+import { cardFromErp, orderSections, sectionsFromResults } from "./map";
 import { sanitizeListing, toErpParams, type Listing, type RawParams } from "./params";
 import type { CategoryView, CollectionsView } from "./types";
 
@@ -54,9 +54,10 @@ export async function loadCategoryPage(slug: string, rawParams: RawParams): Prom
   await connection();
   const listing = sanitizeListing(rawParams);
   const category = await getCategory(slug);
-  const [{ res, listing: effective }, filters] = await Promise.all([
+  const [{ res, listing: effective }, filters, subResults] = await Promise.all([
     listWithFallback(listing, category.slug),
     getProductFilters({ category: category.slug, q: listing.q }),
+    Promise.all(category.children.map((c) => listProductsOrNull({ category: c.slug, per_page: SECTION_SIZE }))),
   ]);
 
   const range = filters.price_range;
@@ -71,6 +72,7 @@ export async function loadCategoryPage(slug: string, rawParams: RawParams): Prom
         parent: category.parent,
         children: category.children,
       },
+      subSections: sectionsFromResults(category.children, subResults.map((r) => r?.data ?? null)),
       products: res.data.map((p) => cardFromErp(p)),
       total: res.meta.total,
       page: res.meta.current_page,

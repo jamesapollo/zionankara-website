@@ -80,7 +80,7 @@ async function ErpCategory({ params, searchParams }: PageProps<"/collections/[ca
       ]}
       intro={category.description ?? undefined}
     >
-      <SubCategoryStrip items={category.children} />
+      <SubCategoryStrip sections={view.subSections} />
       <CategoryResults
         path={path}
         listing={listing}

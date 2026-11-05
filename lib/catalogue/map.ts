@@ -1,6 +1,6 @@
 import type { Product } from "@/lib/catalog";
 import type { CategoryKind, CategoryNode, NavItem, Price, ProductListItem } from "@/lib/erp/types";
-import type { CardProduct } from "./types";
+import type { CardProduct, CollectionSectionView } from "./types";
 
 const NEW_DAYS = 30;
 
@@ -77,4 +77,16 @@ export function pageWindow(current: number, count: number): (number | "gap")[] {
     out.push(n);
   });
   return out;
+}
+
+/** Sections for sub-categories, keeping their order and skipping any with no products (or no result). */
+export function sectionsFromResults(
+  categories: { slug: string; name: string }[],
+  results: (ProductListItem[] | null)[],
+  now = new Date(),
+): CollectionSectionView[] {
+  return categories.flatMap((c, i) => {
+    const items = results[i] ?? [];
+    return items.length ? [{ slug: c.slug, name: c.name, kind: "standard" as const, products: items.map((p) => cardFromErp(p, now)) }] : [];
+  });
 }

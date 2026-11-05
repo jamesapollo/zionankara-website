@@ -33,6 +33,8 @@ export type CategoryView = {
     parent: CategoryLink | null;
     children: CategoryLink[];
   };
+  /** Newest products of each sub-category, shown above the grid. */
+  subSections: CollectionSectionView[];
   products: CardProduct[];
   total: number;
   page: number;

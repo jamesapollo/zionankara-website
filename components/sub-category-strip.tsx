@@ -1,21 +1,15 @@
-import Link from "next/link";
-import type { CategoryLink } from "@/lib/erp/types";
+import type { CollectionSectionView } from "@/lib/catalogue/types";
 import { categoryHref } from "@/lib/erp/queries";
+import { CollectionSection } from "./collection-section";
 
-/** Links to a parent category's sub-categories (e.g. Occasion), shown above its product grid. */
-export function SubCategoryStrip({ items }: { items: CategoryLink[] }) {
-  if (items.length === 0) return null;
+/** A parent category's sub-categories (e.g. Occasion) as Collections-style sections, above its product grid. */
+export function SubCategoryStrip({ sections }: { sections: CollectionSectionView[] }) {
+  if (sections.length === 0) return null;
   return (
-    <nav aria-label="Sub-categories" className="mb-[clamp(28px,3vw,44px)] flex flex-wrap gap-3 border-b border-line pb-[clamp(28px,3vw,44px)]">
-      {items.map((item) => (
-        <Link
-          key={item.slug}
-          href={categoryHref(item.slug)}
-          className="border border-line-strong px-[22px] py-3 text-small uppercase tracking-[0.2em] hover:border-ink hover:bg-ink hover:text-white"
-        >
-          {item.name}
-        </Link>
+    <div className="mb-[clamp(40px,5vw,72px)] flex flex-col gap-[clamp(40px,5vw,64px)] border-b border-line pb-[clamp(40px,5vw,72px)]">
+      {sections.map((s) => (
+        <CollectionSection key={s.slug} name={s.name} href={categoryHref(s.slug)} products={s.products} />
       ))}
-    </nav>
+    </div>
   );
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ProductListItem } from "@/lib/erp/types";
 import type { NavItem, CategoryNode } from "@/lib/erp/types";
-import { cardFromErp, cardFromLocal, orderSections, pageWindow, titleParts } from "./map";
+import { cardFromErp, cardFromLocal, orderSections, pageWindow, sectionsFromResults, titleParts } from "./map";
 import { products } from "@/lib/catalog";
 
 const money = (amount: string) => ({ amount, currency: "KES" });
@@ -86,5 +86,18 @@ describe("pageWindow", () => {
   it("elides the middle of long ranges", () => {
     expect(pageWindow(5, 10)).toEqual([1, "gap", 4, 5, 6, "gap", 10]);
     expect(pageWindow(1, 10)).toEqual([1, 2, "gap", 10]);
+  });
+});
+
+describe("sectionsFromResults", () => {
+  it("keeps category order and skips empty or missing results", () => {
+    const cats = [
+      { slug: "a", name: "A" },
+      { slug: "b", name: "B" },
+      { slug: "c", name: "C" },
+    ];
+    const out = sectionsFromResults(cats, [[item({ slug: "p1" })], [], null], now);
+    expect(out.map((s) => s.slug)).toEqual(["a"]);
+    expect(out[0].products[0].slug).toBe("p1");
   });
 });
