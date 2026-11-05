@@ -20,6 +20,42 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Connecting to the ERP
+
+The storefront reads catalogue, navigation and contact data from the ERP when configured. Copy `.env.example` to `.env.local` for local development.
+
+### Environment variables
+
+All of these are server-only. Never prefix them with `NEXT_PUBLIC_`.
+
+- `ERP_API_URL`: the ERP origin only, e.g. `https://erp.example.com`. Any path is dropped.
+- `STOREFRONT_SIGNING_SECRET`: the same value as the ERP's `STOREFRONT_SIGNING_SECRET`.
+- `ERP_STOREFRONT_HOST`: the customer-facing hostname the ERP uses to resolve the store. Required for cached catalogue reads. Production sets it to the live domain, which must be a verified store domain in the ERP. Local dev uses a domain registered in the ERP.
+- `CATALOGUE_SOURCE`: `local` (default, bundled data) or `erp`. Any other value counts as `local`.
+
+With or without `CATALOGUE_SOURCE=erp`, these always come from the ERP when configured: the header contact strip, footer contact and follow links, the Contact page details, and the enquiry topics and form.
+
+`CATALOGUE_SOURCE=erp` switches the home sections, collections, category, product pages and the category row to ERP data. Under `erp`, the bag and checkout show "Online ordering is coming soon".
+
+### Cutover to the ERP catalogue
+
+1. In the ERP, run `php artisan catalogue:seed-starter <store>` and `php artisan pilot:seed-contact-topics <store>` for the existing store.
+2. Staff load the catalogue, set the category navigation and enter the contact details in the dashboard.
+3. In Vercel, set `CATALOGUE_SOURCE=erp`.
+4. Redeploy.
+
+### Caching
+
+ERP reads are cached for about 5 minutes. Dashboard changes appear on the site within about 5 minutes. There is no on-demand revalidation yet.
+
+### Without ERP configuration
+
+The site still builds and runs. The contact strip and contact details are hidden.
+
+### Enquiry form and proxies
+
+The enquiry form uses the first `x-forwarded-for` entry as the shopper IP. Vercel sets this header correctly. Behind any other proxy, make sure it overwrites `x-forwarded-for` rather than appending to it.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
