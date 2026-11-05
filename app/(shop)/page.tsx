@@ -1,14 +1,21 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 import { ButtonLink, TextLink } from "@/components/button-link";
 import { ProductCard } from "@/components/product-card";
-import { categories, newArrivals, signaturePieces } from "@/lib/catalog";
+import { catalogueSource } from "@/lib/catalogue-source";
+import { categories, newArrivals, signaturePieces, type Product } from "@/lib/catalog";
+import { loadHome } from "@/lib/catalogue/loaders";
+import type { CardProduct, CollectionTile } from "@/lib/catalogue/types";
+import { categoryHref } from "@/lib/erp/queries";
 
 const eyebrow = "text-label font-normal uppercase tracking-[0.28em] text-accent";
 const sectionTitle = "font-display text-h2 font-normal";
 
+// Local source: the three catalogue sections are static. ERP source: each reads the ERP at request time
+// behind its own Suspense, so the hero and editorial sections render at once and builds never call the ERP.
 export default function Home() {
-  const [featured, ...arrivals] = newArrivals;
+  const erp = catalogueSource() === "erp";
 
   return (
     <>
@@ -49,79 +56,21 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Categories */}
-      <section id="categories" className="border-t border-line pt-[clamp(56px,7vw,96px)] pb-[clamp(24px,3vw,40px)]">
-        <div className="mx-auto mb-11 flex max-w-site flex-wrap items-end justify-between gap-6 px-(--za-gutter)">
-          <h2 className={sectionTitle}>
-            Best <em>collections</em>
-          </h2>
-          <TextLink href="/collections">All collections</TextLink>
-        </div>
-        <div className="mx-auto flex max-w-site snap-x snap-proximity gap-7 overflow-x-auto scroll-px-(--za-gutter) px-(--za-gutter) pb-4">
-          {categories.map((category) => (
-            <Link
-              key={category.slug}
-              href={`/collections/${category.slug}`}
-              className="group flex shrink-0 snap-start flex-col items-center gap-[18px] hover:text-accent"
-            >
-              <div className="relative h-[260px] w-[200px] overflow-hidden rounded-t-[100px] bg-tint">
-                <Image
-                  src={category.image}
-                  alt=""
-                  fill
-                  sizes="200px"
-                  className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.04]"
-                />
-              </div>
-              <span className="font-display text-[22px] font-medium">{category.name}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {erp ? (
+        <Suspense fallback={<SectionSkeleton className="h-[480px]" />}>
+          <ErpCollections />
+        </Suspense>
+      ) : (
+        <Collections tiles={categories.map((c) => ({ slug: c.slug, name: c.name, image: { url: c.image, alt: "", width: 200, height: 260 } }))} />
+      )}
 
-      {/* New arrivals */}
-      <section id="new" className="mx-auto max-w-site px-(--za-gutter) pt-[clamp(32px,4vw,56px)] pb-[clamp(56px,7vw,96px)]">
-        <div className="mb-11 flex flex-wrap items-end justify-between gap-6">
-          <div className="flex flex-col gap-3.5">
-            <span className={eyebrow}>Just arrived</span>
-            <h2 className={sectionTitle}>New arrivals</h2>
-          </div>
-          <p className="max-w-[380px] text-base leading-[1.7] text-copy">
-            Limited runs, each cut from a single bolt of print — once it’s gone, it’s gone.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-7 md:grid-cols-2 lg:auto-rows-[minmax(460px,auto)] lg:grid-cols-4">
-          <div className="md:col-span-2 lg:row-span-2">
-            <ProductCard
-              product={featured}
-              showNote
-              priceSize="lg"
-              titleClassName="text-[28px]"
-              frameClassName="aspect-product lg:aspect-auto lg:min-h-[560px] lg:flex-1"
-              sizes="(min-width: 1024px) 50vw, 100vw"
-            />
-          </div>
-          {arrivals.map((product, i) => (
-            <div key={product.slug} className={i === arrivals.length - 1 ? "md:col-span-2" : undefined}>
-              <ProductCard
-                product={product}
-                showNote
-                frameClassName="aspect-product lg:aspect-auto lg:min-h-[340px] lg:flex-1"
-                sizes={
-                  i === arrivals.length - 1
-                    ? "(min-width: 768px) 50vw, 100vw"
-                    : "(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 100vw"
-                }
-              />
-            </div>
-          ))}
-        </div>
-        <div className="mt-14 flex justify-center">
-          <ButtonLink href="/collections" variant="secondary" pad="px-11 py-[17px]">
-            Show more
-          </ButtonLink>
-        </div>
-      </section>
+      {erp ? (
+        <Suspense fallback={<SectionSkeleton className="h-[900px]" />}>
+          <ErpNewArrivals />
+        </Suspense>
+      ) : (
+        <NewArrivals products={newArrivals} />
+      )}
 
       {/* Celebration banner */}
       <section className="grid grid-cols-1 bg-ink text-white lg:grid-cols-2">
@@ -150,24 +99,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Signature pieces */}
-      <section id="shop" className="mx-auto max-w-site px-(--za-gutter) py-[clamp(64px,8vw,112px)]">
-        <div className="mb-14 flex flex-col items-center gap-3.5 text-center">
-          <span className={eyebrow}>Most loved</span>
-          <h2 className={sectionTitle}>Signature pieces</h2>
-        </div>
-        <div className="grid grid-cols-1 gap-x-[clamp(20px,3vw,48px)] gap-y-[clamp(40px,4vw,64px)] sm:grid-cols-2">
-          {signaturePieces.map((product) => (
-            <ProductCard
-              key={product.slug}
-              product={product}
-              priceSize="lg"
-              titleClassName="text-[clamp(24px,2.2vw,32px)]"
-              sizes="(min-width: 1360px) 650px, (min-width: 640px) 50vw, 100vw"
-            />
-          ))}
-        </div>
-      </section>
+      {erp ? (
+        <Suspense fallback={<SectionSkeleton className="h-[900px]" />}>
+          <ErpSignature />
+        </Suspense>
+      ) : (
+        <SignaturePieces products={signaturePieces} />
+      )}
 
       {/* About */}
       <section id="about" className="bg-tint">
@@ -201,5 +139,135 @@ export default function Home() {
         </div>
       </section>
     </>
+  );
+}
+
+function SectionSkeleton({ className }: { className: string }) {
+  return <div aria-busy className={`bg-tint/60 ${className}`} />;
+}
+
+async function ErpCollections() {
+  const { collections } = await loadHome();
+  return <Collections tiles={collections} />;
+}
+
+async function ErpNewArrivals() {
+  const { newArrivals: products } = await loadHome();
+  return <NewArrivals products={products} />;
+}
+
+async function ErpSignature() {
+  const { signature } = await loadHome();
+  return <SignaturePieces products={signature} />;
+}
+
+function Collections({ tiles }: { tiles: CollectionTile[] }) {
+  if (tiles.length === 0) return null;
+  return (
+    <section id="categories" className="border-t border-line pt-[clamp(56px,7vw,96px)] pb-[clamp(24px,3vw,40px)]">
+      <div className="mx-auto mb-11 flex max-w-site flex-wrap items-end justify-between gap-6 px-(--za-gutter)">
+        <h2 className={sectionTitle}>
+          Best <em>collections</em>
+        </h2>
+        <TextLink href="/collections">All collections</TextLink>
+      </div>
+      <div className="mx-auto flex max-w-site snap-x snap-proximity gap-7 overflow-x-auto scroll-px-(--za-gutter) px-(--za-gutter) pb-4">
+        {tiles.map((category) => (
+          <Link
+            key={category.slug}
+            href={categoryHref(category.slug)}
+            className="group flex shrink-0 snap-start flex-col items-center gap-[18px] hover:text-accent"
+          >
+            <div className="relative h-[260px] w-[200px] overflow-hidden rounded-t-[100px] bg-tint">
+              {category.image && (
+                <Image
+                  src={category.image.url}
+                  alt=""
+                  fill
+                  sizes="200px"
+                  className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.04]"
+                />
+              )}
+            </div>
+            <span className="font-display text-[22px] font-medium">{category.name}</span>
+          </Link>
+        ))}
+      </div>
+    </section>
+
+  );
+}
+
+function NewArrivals({ products }: { products: (Product | CardProduct)[] }) {
+  const [featured, ...arrivals] = products;
+  if (!featured) return null;
+  return (
+    <section id="new" className="mx-auto max-w-site px-(--za-gutter) pt-[clamp(32px,4vw,56px)] pb-[clamp(56px,7vw,96px)]">
+      <div className="mb-11 flex flex-wrap items-end justify-between gap-6">
+        <div className="flex flex-col gap-3.5">
+          <span className={eyebrow}>Just arrived</span>
+          <h2 className={sectionTitle}>New arrivals</h2>
+        </div>
+        <p className="max-w-[380px] text-base leading-[1.7] text-copy">
+          Limited runs, each cut from a single bolt of print — once it’s gone, it’s gone.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 gap-7 md:grid-cols-2 lg:auto-rows-[minmax(460px,auto)] lg:grid-cols-4">
+        <div className="md:col-span-2 lg:row-span-2">
+          <ProductCard
+            product={featured}
+            showNote
+            priceSize="lg"
+            titleClassName="text-[28px]"
+            frameClassName="aspect-product lg:aspect-auto lg:min-h-[560px] lg:flex-1"
+            sizes="(min-width: 1024px) 50vw, 100vw"
+          />
+        </div>
+        {arrivals.map((product, i) => (
+          <div key={product.slug} className={i === arrivals.length - 1 ? "md:col-span-2" : undefined}>
+            <ProductCard
+              product={product}
+              showNote
+              frameClassName="aspect-product lg:aspect-auto lg:min-h-[340px] lg:flex-1"
+              sizes={
+                i === arrivals.length - 1
+                  ? "(min-width: 768px) 50vw, 100vw"
+                  : "(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 100vw"
+              }
+            />
+          </div>
+        ))}
+      </div>
+      <div className="mt-14 flex justify-center">
+        <ButtonLink href="/collections" variant="secondary" pad="px-11 py-[17px]">
+          Show more
+        </ButtonLink>
+      </div>
+    </section>
+
+  );
+}
+
+function SignaturePieces({ products }: { products: (Product | CardProduct)[] }) {
+  if (products.length === 0) return null;
+  return (
+    <section id="shop" className="mx-auto max-w-site px-(--za-gutter) py-[clamp(64px,8vw,112px)]">
+      <div className="mb-14 flex flex-col items-center gap-3.5 text-center">
+        <span className={eyebrow}>Most loved</span>
+        <h2 className={sectionTitle}>Signature pieces</h2>
+      </div>
+      <div className="grid grid-cols-1 gap-x-[clamp(20px,3vw,48px)] gap-y-[clamp(40px,4vw,64px)] sm:grid-cols-2">
+        {products.map((product) => (
+          <ProductCard
+            key={product.slug}
+            product={product}
+            priceSize="lg"
+            titleClassName="text-[clamp(24px,2.2vw,32px)]"
+            sizes="(min-width: 1360px) 650px, (min-width: 640px) 50vw, 100vw"
+          />
+        ))}
+      </div>
+    </section>
+
   );
 }

@@ -1,9 +1,18 @@
 import "server-only";
 import { connection } from "next/server";
-import { getCategory, getCategoryNav, getCategoryTree, getProductFilters, listProducts, listProductsOrNull } from "@/lib/erp/queries";
-import { cardFromErp, orderSections, sectionsFromResults } from "./map";
+import { cache } from "react";
+import {
+  getCategory,
+  getCategoryNav,
+  getCategoryTree,
+  getProduct,
+  getProductFilters,
+  listProducts,
+  listProductsOrNull,
+} from "@/lib/erp/queries";
+import { cardFromErp, collectionTiles, orderSections, recommendationsFrom, sectionsFromResults, signatureFrom } from "./map";
 import { sanitizeListing, toErpParams, type Listing, type RawParams } from "./params";
-import type { CategoryView, CollectionsView } from "./types";
+import type { CategoryView, CollectionsView, HomeView, ProductPageView } from "./types";
 
 const SECTION_SIZE = 4;
 
@@ -84,3 +93,50 @@ export async function loadCategoryPage(slug: string, rawParams: RawParams): Prom
     },
   };
 }
+
+/** Slug limit of the ERP; longer slugs cannot exist. */
+export const MAX_PRODUCT_SLUG = 120;
+
+/**
+ * /products/[slug]. A missing product 404s and a renamed slug redirects (notFound / permanentRedirect from the ERP reader).
+ * Recommendations are secondary: if they cannot be read the page still renders without them.
+ */
+export async function loadProductPage(slug: string): Promise<ProductPageView> {
+  await connection();
+  const product = await getProduct(slug);
+  const category = product.categories[0];
+  let recommendations: ProductPageView["recommendations"] = [];
+  if (category) {
+    try {
+      // One extra so the product itself can be dropped.
+      const res = await listProductsOrNull({ category: category.slug, sort: "newest", per_page: 5 });
+      recommendations = recommendationsFrom(res?.data ?? [], product.slug);
+    } catch {
+      recommendations = [];
+    }
+  }
+  return { product, recommendations };
+}
+
+/** Home sections from the ERP. Deduplicated per request so each section can read it behind its own Suspense. */
+export const loadHome = cache(async (): Promise<HomeView> => {
+  await connection();
+  const [tree, newest, featured] = await Promise.all([
+    getCategoryTree(),
+    listProducts({ sort: "newest", per_page: 4 }),
+    listProducts({ featured: true, per_page: 6 }),
+  ]);
+  const standard = tree.filter((c) => c.kind === "standard");
+  const [pictures, fallback] = await Promise.all([
+    Promise.all(standard.map((c) => listProductsOrNull({ category: c.slug, sort: "newest", per_page: 1 }))),
+    featured.data.length >= 6 ? Promise.resolve(null) : listProducts({ sort: "newest", per_page: 6 }),
+  ]);
+  return {
+    collections: collectionTiles(
+      standard,
+      pictures.map((r) => r?.data[0] ?? null),
+    ),
+    newArrivals: newest.data.map((p) => cardFromErp(p)),
+    signature: signatureFrom(featured.data, fallback?.data ?? []),
+  };
+});

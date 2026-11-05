@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { CheckoutForm } from "@/components/checkout-form";
+import { OrderingPaused } from "@/components/ordering-paused";
+import { catalogueSource } from "@/lib/catalogue-source";
 
 export const metadata: Metadata = {
   title: "Checkout",
@@ -8,6 +10,8 @@ export const metadata: Metadata = {
 };
 
 export default function CheckoutPage() {
+  if (catalogueSource() === "erp") return <OrderingPaused trail={[{ label: "Home", href: "/" }, { label: "Checkout" }]} />;
+
   return (
     <>
       <section className="border-b border-line">

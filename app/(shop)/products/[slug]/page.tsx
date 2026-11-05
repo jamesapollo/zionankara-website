@@ -1,17 +1,41 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { ErpProduct } from "@/components/erp-product";
+import { ProductCard } from "@/components/product-card";
 import { ProductGallery } from "@/components/product-gallery";
 import { ProductPurchase } from "@/components/product-purchase";
 import { getCategory, getProduct, products } from "@/lib/catalog";
+import { catalogueSource } from "@/lib/catalogue-source";
+import { loadProductPage, MAX_PRODUCT_SLUG } from "@/lib/catalogue/loaders";
 import { discountLabel } from "@/lib/currency";
+import { getProduct as getErpProduct } from "@/lib/erp/queries";
 
 export function generateStaticParams() {
   return products.map((product) => ({ slug: product.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps<"/products/[slug]">): Promise<Metadata> {
+  if (catalogueSource() === "erp") {
+    const { slug } = await params;
+    if (slug.length > MAX_PRODUCT_SLUG) return {};
+    await connection(); // request time only: metadata must not reach the ERP during a build
+    try {
+      const product = await getErpProduct(slug);
+      const image = product.images.find((i) => i.is_main) ?? product.images[0];
+      return {
+        title: product.seo_title || product.title,
+        description: product.meta_description || product.short_description || undefined,
+        openGraph: image ? { images: [image.url] } : undefined,
+      };
+    } catch {
+      // Missing/renamed/failed: the page body reports it (404, redirect or error page).
+      return {};
+    }
+  }
+
   const product = getProduct((await params).slug);
   if (!product) return {};
   const category = getCategory(product.categorySlug);
@@ -29,7 +53,7 @@ const container =
 export default function ProductPage({ params }: PageProps<"/products/[slug]">) {
   return (
     <Suspense fallback={<ProductSkeleton />}>
-      <ProductDetails params={params} />
+      {catalogueSource() === "erp" ? <ErpProductDetails params={params} /> : <ProductDetails params={params} />}
     </Suspense>
   );
 }
@@ -96,6 +120,59 @@ async function ProductDetails({ params }: Pick<PageProps<"/products/[slug]">, "p
           <ProductPurchase product={product} />
         </div>
       </div>
+    </div>
+  );
+}
+
+async function ErpProductDetails({ params }: Pick<PageProps<"/products/[slug]">, "params">) {
+  const { slug } = await params;
+  if (slug.length > MAX_PRODUCT_SLUG) notFound();
+  const { product, recommendations } = await loadProductPage(slug);
+  const category = product.categories[0];
+  const image = product.images.find((i) => i.is_main) ?? product.images[0];
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.title,
+    description: product.description ?? product.short_description ?? undefined,
+    image: image?.url,
+    brand: { "@type": "Brand", name: "Zionankara" },
+    offers: {
+      "@type": "Offer",
+      price: product.price.current.amount,
+      priceCurrency: product.price.current.currency,
+      availability: product.in_stock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+    },
+  };
+
+  return (
+    <div className={container}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}
+      />
+      <Breadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Collections", href: "/collections" },
+          ...(category ? [{ label: category.name, href: `/collections/${encodeURIComponent(category.slug)}` }] : []),
+          { label: product.title },
+        ]}
+      />
+      <ErpProduct product={product} />
+      {recommendations.length > 0 && (
+        <section className="flex flex-col gap-8 border-t border-line pt-[clamp(32px,4vw,56px)]">
+          <h2 className="font-display text-h2 font-normal">
+            You may also <em>like</em>
+          </h2>
+          <div className="grid grid-cols-2 gap-x-[clamp(16px,2vw,28px)] gap-y-10 lg:grid-cols-4">
+            {recommendations.map((p) => (
+              <ProductCard key={p.slug} product={p} sizes="(min-width: 1024px) 25vw, 50vw" />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

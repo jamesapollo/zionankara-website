@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
 import type { ProductListItem } from "@/lib/erp/types";
 import type { NavItem, CategoryNode } from "@/lib/erp/types";
-import { cardFromErp, cardFromLocal, orderSections, pageWindow, sectionsFromResults, titleParts } from "./map";
+import {
+  cardFromErp,
+  cardFromLocal,
+  collectionTiles,
+  orderSections,
+  pageWindow,
+  recommendationsFrom,
+  sectionsFromResults,
+  signatureFrom,
+  titleParts,
+} from "./map";
 import { products } from "@/lib/catalog";
 
 const money = (amount: string) => ({ amount, currency: "KES" });
@@ -99,5 +109,47 @@ describe("sectionsFromResults", () => {
     const out = sectionsFromResults(cats, [[item({ slug: "p1" })], [], null], now);
     expect(out.map((s) => s.slug)).toEqual(["a"]);
     expect(out[0].products[0].slug).toBe("p1");
+  });
+});
+
+describe("recommendationsFrom", () => {
+  it("drops the product itself and keeps the next four", () => {
+    const list = ["a", "b", "c", "d", "e"].map((slug) => item({ slug, title: slug }));
+    expect(recommendationsFrom(list, "b", now).map((c) => c.slug)).toEqual(["a", "c", "d", "e"]);
+  });
+
+  it("keeps four when the product is not in the list", () => {
+    const list = ["a", "b", "c", "d", "e"].map((slug) => item({ slug }));
+    expect(recommendationsFrom(list, "zzz", now).map((c) => c.slug)).toEqual(["a", "b", "c", "d"]);
+  });
+
+  it("returns what exists when fewer than four remain", () => {
+    expect(recommendationsFrom([item({ slug: "a" })], "a", now)).toEqual([]);
+  });
+});
+
+describe("signatureFrom", () => {
+  const many = (n: number, prefix: string) => Array.from({ length: n }, (_, i) => item({ slug: `${prefix}${i}` }));
+
+  it("uses featured pieces when there are six", () => {
+    expect(signatureFrom(many(6, "f"), many(6, "n"), now).map((c) => c.slug)).toEqual(["f0", "f1", "f2", "f3", "f4", "f5"]);
+  });
+
+  it("falls back to the newest six when fewer than six are featured", () => {
+    expect(signatureFrom(many(5, "f"), many(8, "n"), now).map((c) => c.slug)).toEqual(["n0", "n1", "n2", "n3", "n4", "n5"]);
+  });
+});
+
+describe("collectionTiles", () => {
+  const cat = (slug: string, kind: "standard" | "new_in" | "on_sale" = "standard") => ({ slug, name: slug, kind, children: [] });
+
+  it("keeps standard categories that have a product, with that product's image", () => {
+    const tiles = collectionTiles(
+      [cat("gowns"), cat("new-in", "new_in"), cat("sale", "on_sale"), cat("empty"), cat("tops")],
+      [item({ title: "G" }), null, null, null, item({ main_image: null })],
+    );
+    expect(tiles.map((t) => t.slug)).toEqual(["gowns", "tops"]);
+    expect(tiles[0].image).toMatchObject({ url: "https://media.zionankara.co.ke/a.jpg", alt: "G" });
+    expect(tiles[1].image).toBeNull();
   });
 });

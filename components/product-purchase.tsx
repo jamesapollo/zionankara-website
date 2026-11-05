@@ -6,7 +6,7 @@ import { printColours, sizes, type Product } from "@/lib/catalog";
 import { addToBag, useFormatPrice } from "@/lib/store";
 import { QuantityStepper } from "./quantity-stepper";
 
-const panels = [
+export const panels = [
   {
     title: "Fabric & fit",
     body: "100% cotton wax print, fully lined in cotton voile. True to size with a fitted waist — model is 5′8″ and wears UK 10.",
@@ -21,6 +21,34 @@ const panels = [
   },
 ];
 
+/** Accordion of product information panels; the first starts open. */
+export function InfoPanels({ panels }: { panels: { title: string; body: string }[] }) {
+  const [openPanel, setOpenPanel] = useState(0);
+  return (
+    <div className="flex flex-col border-t border-line">
+      {panels.map((panel, i) => {
+        const open = openPanel === i;
+        return (
+          <div key={panel.title} className="border-b border-line">
+            <button
+              type="button"
+              aria-expanded={open}
+              onClick={() => setOpenPanel(open ? -1 : i)}
+              className="flex w-full cursor-pointer items-center justify-between py-[22px] text-left text-body font-normal hover:text-accent"
+            >
+              {panel.title}
+              <span aria-hidden className="text-xl font-light">
+                {open ? "−" : "+"}
+              </span>
+            </button>
+            {open && <p className="pb-[22px] text-body leading-[1.7] text-pretty text-copy">{panel.body}</p>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 const hexFor = (colour: string) => printColours.find((c) => c.id === colour)?.hex ?? "#111111";
 
 export function ProductPurchase({ product }: { product: Product }) {
@@ -29,7 +57,6 @@ export function ProductPurchase({ product }: { product: Product }) {
   const [size, setSize] = useState(product.sizes.includes("10") ? "10" : product.sizes[0]);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
-  const [openPanel, setOpenPanel] = useState(0);
   const resetTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => () => clearTimeout(resetTimer.current), []);
@@ -124,27 +151,7 @@ export function ProductPurchase({ product }: { product: Product }) {
         </li>
       </ul>
 
-      <div className="flex flex-col border-t border-line">
-        {panels.map((panel, i) => {
-          const open = openPanel === i;
-          return (
-            <div key={panel.title} className="border-b border-line">
-              <button
-                type="button"
-                aria-expanded={open}
-                onClick={() => setOpenPanel(open ? -1 : i)}
-                className="flex w-full cursor-pointer items-center justify-between py-[22px] text-left text-body font-normal hover:text-accent"
-              >
-                {panel.title}
-                <span aria-hidden className="text-xl font-light">
-                  {open ? "−" : "+"}
-                </span>
-              </button>
-              {open && <p className="pb-[22px] text-body leading-[1.7] text-pretty text-copy">{panel.body}</p>}
-            </div>
-          );
-        })}
-      </div>
+      <InfoPanels panels={panels} />
     </div>
   );
 }

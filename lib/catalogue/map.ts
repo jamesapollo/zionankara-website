@@ -1,6 +1,6 @@
 import type { Product } from "@/lib/catalog";
 import type { CategoryKind, CategoryNode, NavItem, Price, ProductListItem } from "@/lib/erp/types";
-import type { CardProduct, CollectionSectionView } from "./types";
+import type { CardProduct, CollectionSectionView, CollectionTile } from "./types";
 
 const NEW_DAYS = 30;
 
@@ -19,6 +19,7 @@ export function cardFromErp(item: ProductListItem, now = new Date()): CardProduc
       : null,
     price: item.price,
     isNew: Number.isFinite(published) && now.getTime() - published < NEW_DAYS * 86_400_000,
+    note: item.short_description ?? undefined,
   };
 }
 
@@ -88,5 +89,31 @@ export function sectionsFromResults(
   return categories.flatMap((c, i) => {
     const items = results[i] ?? [];
     return items.length ? [{ slug: c.slug, name: c.name, kind: "standard" as const, products: items.map((p) => cardFromErp(p, now)) }] : [];
+  });
+}
+
+const RECOMMENDATIONS = 4;
+const SIGNATURE_PIECES = 6;
+
+/** Recommendations: the newest products of the product's category, minus the product itself. */
+export function recommendationsFrom(items: ProductListItem[], excludeSlug: string, now = new Date()): CardProduct[] {
+  return items
+    .filter((p) => p.slug !== excludeSlug)
+    .slice(0, RECOMMENDATIONS)
+    .map((p) => cardFromErp(p, now));
+}
+
+/** Home "Signature pieces": the featured six, or the newest six while fewer than six are featured. */
+export function signatureFrom(featured: ProductListItem[], newest: ProductListItem[], now = new Date()): CardProduct[] {
+  const source = featured.length >= SIGNATURE_PIECES ? featured : newest;
+  return source.slice(0, SIGNATURE_PIECES).map((p) => cardFromErp(p, now));
+}
+
+/** Home "Best collections": standard top-level categories that have products, pictured by their newest product. */
+export function collectionTiles(categories: CategoryNode[], newest: (ProductListItem | null)[]): CollectionTile[] {
+  return categories.flatMap((c, i) => {
+    const product = newest[i];
+    if (c.kind !== "standard" || !product) return [];
+    return [{ slug: c.slug, name: c.name, image: cardFromErp(product).image }];
   });
 }

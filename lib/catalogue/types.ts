@@ -1,4 +1,4 @@
-import type { CategoryKind, CategoryLink, Price } from "@/lib/erp/types";
+import type { CategoryKind, CategoryLink, Price, ProductDetail } from "@/lib/erp/types";
 
 /** One product card, whichever source it came from. */
 export type CardProduct = {
@@ -41,4 +41,17 @@ export type CategoryView = {
   pageCount: number;
   filters: FilterView[];
   priceRange: { min: number; max: number; currency: string } | null;
+};
+
+export type CollectionTile = { slug: string; name: string; image: CardProduct["image"] };
+
+export type HomeView = {
+  collections: CollectionTile[];
+  newArrivals: CardProduct[];
+  signature: CardProduct[];
+};
+
+export type ProductPageView = {
+  product: ProductDetail;
+  recommendations: CardProduct[];
 };
