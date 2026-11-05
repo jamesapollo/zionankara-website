@@ -74,8 +74,68 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The ERP finds the store from `ERP_STOREFRONT_HOST`. The value must exactly match a store domain in the ERP, and that domain must be **active** and **verified** and belong to an **active** store. If it doesn't match, every ERP call returns `404 {"message":"Store not found."}`. The site keeps working, but the header contact strip, the footer contact details and the Contact page form quietly disappear.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`ERP_STOREFRONT_HOST` is a **bare hostname**: no scheme, no port, no path.
+
+| Value | Valid? |
+| --- | --- |
+| `shop.localhost` | yes |
+| `zionankara.co.ke` | yes |
+| `localhost` | only if the ERP has a `localhost` domain (it normally doesn't) |
+| `http://localhost:8000` | no, this is a URL |
+
+### Development
+
+1. Start the ERP API (`commerce-erp-api`, served on `http://localhost:8000`).
+2. List the store domains the ERP knows about. Run this from the ERP project:
+
+   ```bash
+   php artisan tinker --execute='foreach (App\Modules\Tenancy\Models\StoreDomain::with("store")->get() as $d) echo $d->hostname, " | ", $d->status->value, " | ", $d->verification_status->value, " | ", $d->store?->name, PHP_EOL;'
+   ```
+
+   Pick the Zion Ankara domain that is `active | verified`, e.g. `shop.localhost`.
+3. Set `.env.local` (or `.env`):
+
+   ```bash
+   ERP_API_URL=http://localhost:8000
+   STOREFRONT_SIGNING_SECRET=<same value as the ERP's STOREFRONT_SIGNING_SECRET>
+   ERP_STOREFRONT_HOST=shop.localhost
+   CATALOGUE_SOURCE=local   # or erp
+   ```
+
+4. **Restart `npm run dev`** after any change to these variables. A failed ERP read is cached for about 5 minutes, so the running server keeps showing the old result until you restart it or the cache expires.
+5. Check that the contact strip (phone, email, location, social links) appears above the header.
+
+### Production (Vercel)
+
+1. Register the live domain (e.g. `zionankara.co.ke`) on the Zion Ankara store. The ERP dashboard has no screen for domains. `php artisan pilot:setup --domain=...` only sets one when it creates a new store. For the existing store, run this on the production ERP:
+
+   ```bash
+   php artisan tinker --execute='
+   $store = App\Modules\Tenancy\Models\Store::where("slug", "zion-ankara")->firstOrFail();
+   app(App\Modules\Tenancy\Actions\AddStoreDomain::class)->handle(
+       $store, "zionankara.co.ke", App\Modules\Tenancy\Enums\DomainType::Custom, false, true
+   );'
+   ```
+
+   The last two arguments are `isPrimary` and `verifiedAndActive`. Passing `true` creates the domain active and verified. Run the domain-listing command from the Development steps to confirm it.
+2. In Vercel, under Project → Settings → Environment Variables, scope **Production** and set:
+   - `ERP_API_URL`: the public ERP origin, e.g. `https://erp.example.com`
+   - `STOREFRONT_SIGNING_SECRET`: the same value as the production ERP
+   - `ERP_STOREFRONT_HOST`: the live domain from step 1, as a bare hostname
+   - `CATALOGUE_SOURCE`: `local` or `erp` (read the checklist above before choosing `erp`)
+3. Scope **Preview** to a test store, or leave the ERP vars unset there, so previews don't send enquiries to the live inbox.
+4. Redeploy. Env changes only take effect on a new deployment.
+5. On the live site, check the contact strip, the footer contact details and the Contact page form. Then send one test enquiry.
+
+### Troubleshooting: contact strip or contact form missing
+
+- Look in the server or Vercel function logs for `[header] store contact unavailable`. It is logged **once per server process**, so check the first request after start-up.
+- `Store not found.` means `ERP_STOREFRONT_HOST` doesn't match an active, verified domain. Fix the value (bare hostname) or register the domain in the ERP.
+- `401` means the request signature was rejected. Check that `STOREFRONT_SIGNING_SECRET` matches the ERP exactly.
+- `ERP request failed` or `timed out` means the ERP isn't reachable at `ERP_API_URL`.
+- The ERP store also needs contact details entered in the dashboard. If the phone, email, location and socials are all empty, the strip renders nothing.
+- After fixing anything, restart the dev server or redeploy. Otherwise wait about 5 minutes for the cached failure to expire.
