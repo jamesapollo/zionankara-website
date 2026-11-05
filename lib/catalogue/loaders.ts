@@ -111,11 +111,19 @@ export async function loadProductPage(slug: string): Promise<ProductPageView> {
       // One extra so the product itself can be dropped.
       const res = await listProductsOrNull({ category: category.slug, sort: "newest", per_page: 5 });
       recommendations = recommendationsFrom(res?.data ?? [], product.slug);
-    } catch {
+    } catch (error) {
+      console.warn("[catalogue] recommendations unavailable:", error instanceof Error ? error.message : error);
       recommendations = [];
     }
   }
   return { product, recommendations };
+}
+
+let tileFailureLogged = false;
+function logTileFailureOnce(error: unknown) {
+  if (tileFailureLogged) return;
+  tileFailureLogged = true;
+  console.warn("[catalogue] collection tile picture unavailable:", error instanceof Error ? error.message : error);
 }
 
 /** Home sections from the ERP. Deduplicated per request so each section can read it behind its own Suspense. */
@@ -128,7 +136,15 @@ export const loadHome = cache(async (): Promise<HomeView> => {
   ]);
   const standard = tree.filter((c) => c.kind === "standard");
   const [pictures, fallback] = await Promise.all([
-    Promise.all(standard.map((c) => listProductsOrNull({ category: c.slug, sort: "newest", per_page: 1 }))),
+    Promise.all(
+      standard.map((c) =>
+        listProductsOrNull({ category: c.slug, sort: "newest", per_page: 1 }).catch((error) => {
+          // One tile's picture must not take the whole home page down.
+          logTileFailureOnce(error);
+          return null;
+        }),
+      ),
+    ),
     featured.data.length >= 6 ? Promise.resolve(null) : listProducts({ sort: "newest", per_page: 6 }),
   ]);
   return {

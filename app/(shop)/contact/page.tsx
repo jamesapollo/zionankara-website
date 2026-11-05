@@ -3,11 +3,12 @@ import { Suspense } from "react";
 import { ContactDetailsCards } from "@/components/contact-details-cards";
 import { ContactForm } from "@/components/contact-form";
 import { Faq } from "@/components/faq";
+import { erpConfigured } from "@/lib/erp/client";
 import { getContactOrNull } from "@/lib/erp/header-data";
 import { humaniseSlug } from "@/lib/enquiry";
 
 export const metadata: Metadata = {
-  title: "Contact Zionankara | Atelier in Nairobi",
+  title: { absolute: "Contact Zionankara | Atelier in Nairobi" },
   description: "Write to the Zionankara atelier — orders, made-to-measure, press and wholesale enquiries.",
 };
 
@@ -40,6 +41,15 @@ export default function ContactPage({ searchParams }: PageProps<"/contact">) {
 }
 
 async function ContactMain({ searchParams }: Pick<PageProps<"/contact">, "searchParams">) {
+  if (!erpConfigured()) {
+    return (
+      <section className="mx-auto max-w-site px-(--za-gutter) pb-[clamp(72px,9vw,140px)]">
+        <p role="status" className="mx-auto max-w-[560px] border border-line p-8 text-center text-body leading-[1.8] text-copy">
+          Our contact form is unavailable right now. Please try again later.
+        </p>
+      </section>
+    );
+  }
   const params = await searchParams;
   const contact = await getContactOrNull();
   const topics = contact?.enquiry_topics ?? [];

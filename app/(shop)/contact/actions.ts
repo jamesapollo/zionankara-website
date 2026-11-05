@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { erpPost, shopperIp } from "@/lib/erp/client";
 import { getContactOrNull } from "@/lib/erp/header-data";
-import { classifyEnquiryResponse, GENERIC_FAILURE, validateEnquiry, type EnquiryInput, type EnquiryState } from "@/lib/enquiry";
+import { classifyEnquiryResponse, enquiryBody, GENERIC_FAILURE, validateEnquiry, type EnquiryInput, type EnquiryState } from "@/lib/enquiry";
 
 const text = (form: FormData, key: string) => {
   const value = form.get(key);
@@ -26,9 +26,11 @@ export async function sendEnquiry(_prev: EnquiryState, form: FormData): Promise<
   try {
     const { status, data } = await erpPost<unknown>(
       "/api/v1/storefront/enquiries",
-      { ...values, topic: values.topic || undefined, website: text(form, "website") },
+      enquiryBody(values, form),
       { clientIp: shopperIp(await headers()) },
     );
+    // Anything other than accepted / validation / rate-limited is a deployment problem worth surfacing (status only).
+    if (status !== 202 && status !== 422 && status !== 429) console.error(`[contact] ERP rejected the enquiry with status ${status}`);
     const result = classifyEnquiryResponse(status, data);
     if (result.status !== "sent") return { ...result, values };
     return { status: "sent", firstName: values.name.split(/\s+/)[0], email: values.email };

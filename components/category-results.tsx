@@ -59,7 +59,7 @@ export function CategoryResults({ path, listing, products, total, page, pageCoun
           <div className="flex items-baseline justify-between border-b border-ink pb-4">
             <span className="text-small font-medium uppercase tracking-[0.22em]">Filters</span>
             {filtered && (
-              <Link href={clearHref} className="text-small text-muted underline underline-offset-[3px] hover:text-accent">
+              <Link href={clearHref} rel="nofollow" className="text-small text-muted underline underline-offset-[3px] hover:text-accent">
                 Clear all
               </Link>
             )}
@@ -74,6 +74,7 @@ export function CategoryResults({ path, listing, products, total, page, pageCoun
                   return (
                     <li key={v.id}>
                       <Link
+                        rel="nofollow"
                         href={href({
                           optionValues: on ? listing.optionValues.filter((id) => id !== v.id) : [...listing.optionValues, v.id],
                         })}
@@ -158,6 +159,7 @@ export function CategoryResults({ path, listing, products, total, page, pageCoun
             {chips.map((chip) => (
               <li key={chip.label}>
                 <Link
+                  rel="nofollow"
                   href={chip.href}
                   aria-label={`Remove filter: ${chip.label}`}
                   className="flex items-center gap-2.5 bg-tint px-3.5 py-2 text-small hover:bg-accent-soft"
@@ -190,6 +192,7 @@ export function CategoryResults({ path, listing, products, total, page, pageCoun
             <span className="font-display text-[32px]">{filtered || page > 1 ? "No pieces match those filters" : "No pieces found"}</span>
             {(filtered || page > 1) && (
               <Link
+                rel="nofollow"
                 href={clearHref}
                 className="bg-ink px-[30px] py-4 text-label uppercase tracking-button text-white hover:bg-accent"
               >
@@ -202,7 +205,7 @@ export function CategoryResults({ path, listing, products, total, page, pageCoun
         {pageCount > 1 && (
           <nav aria-label="Pagination" className="mt-8 flex flex-wrap items-center justify-center gap-2 border-t border-line pt-8">
             {page > 1 ? (
-              <Link href={href({ page: page - 1 })} rel="prev" className="flex h-11 items-center px-[18px] text-label uppercase tracking-[0.2em]">
+              <Link href={href({ page: page - 1 })} rel="prev nofollow" className="flex h-11 items-center px-[18px] text-label uppercase tracking-[0.2em]">
                 ← Prev
               </Link>
             ) : (
@@ -218,6 +221,7 @@ export function CategoryResults({ path, listing, products, total, page, pageCoun
               ) : (
                 <Link
                   key={n}
+                  rel="nofollow"
                   href={href({ page: n })}
                   aria-current={n === page ? "page" : undefined}
                   aria-label={`Page ${n}`}
@@ -228,7 +232,7 @@ export function CategoryResults({ path, listing, products, total, page, pageCoun
               ),
             )}
             {page < pageCount ? (
-              <Link href={href({ page: page + 1 })} rel="next" className="flex h-11 items-center px-[18px] text-label uppercase tracking-[0.2em]">
+              <Link href={href({ page: page + 1 })} rel="next nofollow" className="flex h-11 items-center px-[18px] text-label uppercase tracking-[0.2em]">
                 Next →
               </Link>
             ) : (

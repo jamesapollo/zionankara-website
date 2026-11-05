@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { CategoryResults } from "@/components/category-results";
 import { CollectionPage } from "@/components/collection-page";
+import { CollectionSearch } from "@/components/collection-search";
 import { CollectionSection } from "@/components/collection-section";
 import { catalogueSource } from "@/lib/catalogue-source";
 import { loadCollections } from "@/lib/catalogue/loaders";
@@ -48,6 +49,7 @@ async function ErpCollections({ searchParams }: Pick<PageProps<"/collections">, 
         trail={[{ label: "Home", href: "/" }, { label: "Collections", href: "/collections" }, { label: "Search" }]}
         intro={`${search.total} ${search.total === 1 ? "piece" : "pieces"} matching your search.`}
       >
+        <CollectionSearch defaultValue={search.q} />
         <CategoryResults
           path="/collections"
           listing={sanitizeListing(raw)}
@@ -62,6 +64,7 @@ async function ErpCollections({ searchParams }: Pick<PageProps<"/collections">, 
 
   return (
     <CollectionPage title={title}>
+      <CollectionSearch />
       <div className="flex flex-col gap-[clamp(48px,6vw,88px)]">
         {view.sections.map((section, i) => (
           <CollectionSection

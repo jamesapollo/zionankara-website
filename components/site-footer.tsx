@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { mailHref, socialLinks, telHref, whatsappHref } from "@/lib/contact";
-import { getContactOrNull } from "@/lib/erp/header-data";
+import { catalogueSource } from "@/lib/catalogue-source";
+import { getCategoryRowItems, getContactOrNull, type CategoryRowItem } from "@/lib/erp/header-data";
 import type { ContactDetails } from "@/lib/erp/types";
 import { Logo } from "./logo";
 import { NewsletterForm } from "./newsletter-form";
@@ -30,7 +31,7 @@ const columns = [
 type FooterLink = { href: string; label: string; external?: boolean };
 
 /** Client care and Follow columns; ERP contact fields are appended only when set. */
-function footerColumns(contact: ContactDetails | null) {
+function footerColumns(contact: ContactDetails | null, categoryItems: CategoryRowItem[]) {
   const phone = contact?.phone?.trim();
   const email = contact?.email?.trim();
   const contactLinks: FooterLink[] = [
@@ -39,7 +40,12 @@ function footerColumns(contact: ContactDetails | null) {
     ...(mailHref(email) ? [{ href: mailHref(email)!, label: email!, external: true }] : []),
   ];
   const follow: FooterLink[] = socialLinks(contact).map((s) => ({ ...s, external: true }));
-  const [shop, care] = columns;
+  const [localShop, care] = columns;
+  // Under erp the local slugs do not exist: SHOP links mirror the header category row.
+  const shop =
+    catalogueSource() === "erp"
+      ? { title: "Shop", links: categoryItems.length > 0 ? categoryItems : [{ href: "/collections", label: "Collections" }] }
+      : localShop;
   return [
     shop,
     { ...care, links: [...care.links, ...contactLinks] },
@@ -48,18 +54,19 @@ function footerColumns(contact: ContactDetails | null) {
 }
 
 async function LoadedFooter() {
-  return <FooterMarkup contact={await getContactOrNull()} />;
+  const [contact, categoryItems] = await Promise.all([getContactOrNull(), getCategoryRowItems()]);
+  return <FooterMarkup contact={contact} categoryItems={categoryItems} />;
 }
 
 export function SiteFooter() {
   return (
-    <Suspense fallback={<FooterMarkup contact={null} />}>
+    <Suspense fallback={<FooterMarkup contact={null} categoryItems={[]} />}>
       <LoadedFooter />
     </Suspense>
   );
 }
 
-function FooterMarkup({ contact }: { contact: ContactDetails | null }) {
+function FooterMarkup({ contact, categoryItems }: { contact: ContactDetails | null; categoryItems: CategoryRowItem[] }) {
   return (
     <footer className="bg-ink text-on-dark">
       <div className="mx-auto flex max-w-site flex-col gap-14 px-(--za-gutter) pt-[clamp(56px,6vw,80px)] pb-8">
@@ -69,7 +76,7 @@ function FooterMarkup({ contact }: { contact: ContactDetails | null }) {
             <p className="text-body leading-[1.7]">Letters on new collections and private sales. Rarely, and beautifully.</p>
             <NewsletterForm />
           </div>
-          {footerColumns(contact).map((column) => (
+          {footerColumns(contact, categoryItems).map((column) => (
             <div key={column.title} className="flex flex-col gap-3.5 text-body">
               <span className="mb-1.5 text-label uppercase tracking-[0.22em] text-white">{column.title}</span>
               {column.links.map((link) => (

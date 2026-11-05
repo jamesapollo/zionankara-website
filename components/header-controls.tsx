@@ -24,16 +24,19 @@ export function CurrencySelect({ className = "" }: { className?: string }) {
   );
 }
 
-export function HeaderControls() {
+/** `searchHref` is set only when the catalogue has somewhere to search (the ERP collections page). */
+export function HeaderControls({ searchHref }: { searchHref?: string }) {
   const { bag } = useStore();
   const pathname = usePathname();
 
   return (
     <>
       <CurrencySelect className="max-nav:hidden" />
-      <Link href="/search" className="hover:text-accent max-nav:hidden">
-        Search
-      </Link>
+      {searchHref && (
+        <Link href={searchHref} className="hover:text-accent max-nav:hidden">
+          Search
+        </Link>
+      )}
       <Link href="/bag" aria-current={pathname === "/bag" ? "page" : undefined} className={pathname === "/bag" ? "text-accent" : "hover:text-accent"}>
         Bag ({bagCount(bag)})
       </Link>

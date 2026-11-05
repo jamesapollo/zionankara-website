@@ -97,11 +97,6 @@ export function ErpProduct({ product }: { product: ProductDetail }) {
                     );
                   })}
                 </div>
-                {type.name.toLowerCase().includes("size") && (
-                  <Link href="/size-guide" className="text-small text-copy underline underline-offset-[3px] hover:text-accent">
-                    Size guide →
-                  </Link>
-                )}
               </fieldset>
             );
           })}

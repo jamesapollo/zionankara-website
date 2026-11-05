@@ -31,11 +31,20 @@ All of these are server-only. Never prefix them with `NEXT_PUBLIC_`.
 - `ERP_API_URL`: the ERP origin only, e.g. `https://erp.example.com`. Any path is dropped.
 - `STOREFRONT_SIGNING_SECRET`: the same value as the ERP's `STOREFRONT_SIGNING_SECRET`.
 - `ERP_STOREFRONT_HOST`: the customer-facing hostname the ERP uses to resolve the store. Required for cached catalogue reads. Production sets it to the live domain, which must be a verified store domain in the ERP. Local dev uses a domain registered in the ERP.
-- `CATALOGUE_SOURCE`: `local` (default, bundled data) or `erp`. Any other value counts as `local`.
+- `CATALOGUE_SOURCE`: `local` (default, bundled data) or `erp`. Matching ignores case and surrounding spaces (`ERP ` works); any other value counts as `local`.
 
 With or without `CATALOGUE_SOURCE=erp`, these always come from the ERP when configured: the header contact strip, footer contact and follow links, the Contact page details, and the enquiry topics and form.
 
 `CATALOGUE_SOURCE=erp` switches the home sections, collections, category, product pages and the category row to ERP data. Under `erp`, the bag and checkout show "Online ordering is coming soon".
+
+### Before switching CATALOGUE_SOURCE to erp
+
+- [ ] The ERP env (`ERP_API_URL`, `STOREFRONT_SIGNING_SECRET`, `ERP_STOREFRONT_HOST`) is set in Vercel **Production**. `ERP_STOREFRONT_HOST` is the verified live domain. Send one real enquiry from a preview deployment that uses the Production env before promoting.
+- [ ] The ERP's `PUBLIC_DISK_URL` serves images from `media.zionankara.co.ke`, the only host in `images.remotePatterns`.
+- [ ] Use a remote/shared cache handler (`'use cache: remote'`) for the ERP readers before high traffic. The default in-memory cache is per instance and ERP reads fan out per request.
+- [ ] The ERP is reachable during deploys. A failed nav or strip read is cached for about 5 minutes.
+- [ ] Legacy local slugs (e.g. `/collections/gowns`, `/products/<local-slug>`) are redirected to their ERP equivalents in `next.config` redirects, or the ERP slugs match them.
+- [ ] ERP env is scoped so preview deployments do not post enquiries into the live inbox (or previews point at a test store).
 
 ### Cutover to the ERP catalogue
 
@@ -50,7 +59,7 @@ ERP reads are cached for about 5 minutes. Dashboard changes appear on the site w
 
 ### Without ERP configuration
 
-The site still builds and runs. The contact strip and contact details are hidden.
+Under `CATALOGUE_SOURCE=local` (the default) the site still builds and runs without ERP configuration. The contact strip and contact details are hidden, and the Contact page shows "Our contact form is unavailable right now" in place of the form. Under `erp`, the ERP must be configured.
 
 ### Enquiry form and proxies
 

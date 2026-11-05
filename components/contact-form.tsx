@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { sendEnquiry } from "@/app/(shop)/contact/actions";
-import type { EnquiryState } from "@/lib/enquiry";
+import { HONEYPOT_FIELD, type EnquiryState } from "@/lib/enquiry";
 
 const idle: EnquiryState = { status: "idle" };
 const label = "text-[11px] font-normal uppercase tracking-[0.22em] text-[#777]";
@@ -153,8 +153,8 @@ export function ContactForm({
       {/* Honeypot: hidden from people and assistive tech; bots fill it. */}
       <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
         <label>
-          Website
-          <input name="website" tabIndex={-1} autoComplete="off" defaultValue="" />
+          Leave this empty
+          <input name={HONEYPOT_FIELD} tabIndex={-1} autoComplete="off" defaultValue="" />
         </label>
       </div>
 

@@ -3,7 +3,7 @@ import Image from "next/image";
 import { ButtonLink } from "@/components/button-link";
 
 export const metadata: Metadata = {
-  title: "About Zionankara | Ankara Fashion Atelier, Nairobi",
+  title: { absolute: "About Zionankara | Ankara Fashion Atelier, Nairobi" },
   description:
     "The story behind Zionankara — authentic Ankara wax prints, cut in small batches with clean modern lines and finished by hand.",
 };

@@ -83,7 +83,7 @@ export default function Home() {
             Weddings, owambe, christenings and quiet dinners — wax-print pieces finished by hand, shipped worldwide.
           </p>
           <div>
-            <ButtonLink href="/collections/gowns" variant="on-dark" pad="px-9 py-[18px]">
+            <ButtonLink href={erp ? "/collections" : "/collections/gowns"} variant="on-dark" pad="px-9 py-[18px]">
               Shop the edit
             </ButtonLink>
           </div>

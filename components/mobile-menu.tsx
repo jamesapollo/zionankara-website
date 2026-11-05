@@ -9,11 +9,12 @@ type MobileMenuProps = {
   links: { href: string; label: string }[];
   categories: { href: string; label: string; accent?: boolean }[];
   socials: { label: string; href: string }[];
+  searchHref?: string;
 };
 
 const itemClass = "border-b border-[#F1F1F1] py-3.5 text-[13px] uppercase tracking-[0.18em] hover:text-accent";
 
-export function MobileMenu({ links, categories, socials }: MobileMenuProps) {
+export function MobileMenu({ links, categories, socials, searchHref }: MobileMenuProps) {
   const [open, setOpen] = useState(false);
   const [openedAt, setOpenedAt] = useState<string | null>(null);
   const pathname = usePathname();
@@ -68,9 +69,11 @@ export function MobileMenu({ links, categories, socials }: MobileMenuProps) {
                 ))}
               </>
             )}
-            <Link href="/search" onClick={close} className={itemClass}>
-              Search
-            </Link>
+            {searchHref && (
+              <Link href={searchHref} onClick={close} className={itemClass}>
+                Search
+              </Link>
+            )}
             <div className="flex items-center justify-between py-4">
               <span>Currency</span>
               <CurrencySelect />
