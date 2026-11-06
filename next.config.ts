@@ -1,10 +1,17 @@
 import type { NextConfig } from "next";
 import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 
-/** Production product images. */
-const MEDIA_HOST = new URL("https://media.zionankara.co.ke/**");
-/** The local ERP's storage, allowed only under `next dev`. */
-const LOCAL_ERP_MEDIA = new URL("http://localhost:8000/**");
+/** Used when ERP_MEDIA_URL is unset. */
+const DEFAULT_MEDIA_URL = "https://media.zionankara.com";
+
+/** Image hosts from ERP_MEDIA_URL (comma-separated base URLs, matching the ERP's PUBLIC_DISK_URL). */
+function mediaPatterns(): URL[] {
+  const urls = (process.env.ERP_MEDIA_URL?.trim() || DEFAULT_MEDIA_URL)
+    .split(",")
+    .map((u) => u.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+  return urls.map((u) => new URL(`${u}/**`));
+}
 
 export default function nextConfig(phase: string): NextConfig {
   const isDev = phase === PHASE_DEVELOPMENT_SERVER;
@@ -14,8 +21,9 @@ export default function nextConfig(phase: string): NextConfig {
     },
     cacheComponents: true,
     images: {
-      remotePatterns: isDev ? [MEDIA_HOST, LOCAL_ERP_MEDIA] : [MEDIA_HOST],
-      // localhost resolves to a private IP, which the optimizer refuses by default (SSRF guard). Dev only.
+      remotePatterns: mediaPatterns(),
+      // A localhost image host resolves to a private IP, which the optimizer refuses by default (SSRF guard).
+      // Allowed under `next dev` only, never in a build.
       dangerouslyAllowLocalIP: isDev,
     },
     partialPrefetching: true,

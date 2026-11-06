@@ -31,6 +31,7 @@ All of these are server-only. Never prefix them with `NEXT_PUBLIC_`.
 - `ERP_API_URL`: the ERP origin only, e.g. `https://erp.example.com`. Any path is dropped.
 - `STOREFRONT_SIGNING_SECRET`: the same value as the ERP's `STOREFRONT_SIGNING_SECRET`.
 - `ERP_STOREFRONT_HOST`: the customer-facing hostname the ERP uses to resolve the store. Required for cached catalogue reads. Production sets it to the live domain, which must be a verified store domain in the ERP. Local dev uses a domain registered in the ERP.
+- `ERP_MEDIA_URL`: the base URL the ERP serves product images from (the ERP's `PUBLIC_DISK_URL`), e.g. `https://media.zionankara.com`. These hosts are the only ones `next/image` accepts. Separate several with commas. If unset, it defaults to `https://media.zionankara.com`. It is read when the config loads, so a change needs a dev restart or a rebuild. Under `next dev` only, a `localhost` host is also allowed past Next's private-IP check.
 - `CATALOGUE_SOURCE`: `local` (default, bundled data) or `erp`. Matching ignores case and surrounding spaces (`ERP ` works); any other value counts as `local`.
 
 With or without `CATALOGUE_SOURCE=erp`, these always come from the ERP when configured: the header contact strip, footer contact and follow links, the Contact page details, and the enquiry topics and form.
@@ -48,7 +49,7 @@ The desktop category row below the header shows the category navigation set in t
 ### Before switching CATALOGUE_SOURCE to erp
 
 - [ ] The ERP env (`ERP_API_URL`, `STOREFRONT_SIGNING_SECRET`, `ERP_STOREFRONT_HOST`) is set in Vercel **Production**. `ERP_STOREFRONT_HOST` is the verified live domain. Send one real enquiry from a preview deployment that uses the Production env before promoting.
-- [ ] The ERP's `PUBLIC_DISK_URL` serves images from `media.zionankara.co.ke`, the only host in `images.remotePatterns`.
+- [ ] `ERP_MEDIA_URL` in Vercel Production matches the ERP's `PUBLIC_DISK_URL` (e.g. `https://media.zionankara.com`). Product images from any other host are rejected.
 - [ ] Use a remote/shared cache handler (`'use cache: remote'`) for the ERP readers before high traffic. The default in-memory cache is per instance and ERP reads fan out per request.
 - [ ] The ERP is reachable during deploys. A failed nav or strip read is cached for about 5 minutes.
 - [ ] Legacy local slugs (e.g. `/collections/gowns`, `/products/<local-slug>`) are redirected to their ERP equivalents in `next.config` redirects, or the ERP slugs match them.
@@ -88,10 +89,12 @@ The ERP finds the store from `ERP_STOREFRONT_HOST`. The value must exactly match
 
 `ERP_STOREFRONT_HOST` is a **bare hostname**: no scheme, no port, no path.
 
+In production it is `www.zionankara.com`. The bare `zionankara.com` redirects there, so `www.zionankara.com` is the domain to register and verify in the ERP.
+
 | Value | Valid? |
 | --- | --- |
 | `shop.localhost` | yes |
-| `zionankara.co.ke` | yes |
+| `www.zionankara.com` | yes |
 | `localhost` | only if the ERP has a `localhost` domain (it normally doesn't) |
 | `http://localhost:8000` | no, this is a URL |
 
@@ -111,6 +114,7 @@ The ERP finds the store from `ERP_STOREFRONT_HOST`. The value must exactly match
    ERP_API_URL=http://localhost:8000
    STOREFRONT_SIGNING_SECRET=<same value as the ERP's STOREFRONT_SIGNING_SECRET>
    ERP_STOREFRONT_HOST=shop.localhost
+   ERP_MEDIA_URL=http://localhost:8000   # where the local ERP serves /storage images
    CATALOGUE_SOURCE=local   # or erp
    ```
 
@@ -119,13 +123,13 @@ The ERP finds the store from `ERP_STOREFRONT_HOST`. The value must exactly match
 
 ### Production (Vercel)
 
-1. Register the live domain (e.g. `zionankara.co.ke`) on the Zion Ankara store. The ERP dashboard has no screen for domains. `php artisan pilot:setup --domain=...` only sets one when it creates a new store. For the existing store, run this on the production ERP:
+1. Register the live domain (e.g. `www.zionankara.com`) on the Zion Ankara store. The ERP dashboard has no screen for domains. `php artisan pilot:setup --domain=...` only sets one when it creates a new store. For the existing store, run this on the production ERP:
 
    ```bash
    php artisan tinker --execute='
    $store = App\Modules\Tenancy\Models\Store::where("slug", "zion-ankara")->firstOrFail();
    app(App\Modules\Tenancy\Actions\AddStoreDomain::class)->handle(
-       $store, "zionankara.co.ke", App\Modules\Tenancy\Enums\DomainType::Custom, false, true
+       $store, "www.zionankara.com", App\Modules\Tenancy\Enums\DomainType::Custom, false, true
    );'
    ```
 
@@ -134,6 +138,7 @@ The ERP finds the store from `ERP_STOREFRONT_HOST`. The value must exactly match
    - `ERP_API_URL`: the public ERP origin, e.g. `https://erp.example.com`
    - `STOREFRONT_SIGNING_SECRET`: the same value as the production ERP
    - `ERP_STOREFRONT_HOST`: the live domain from step 1, as a bare hostname
+   - `ERP_MEDIA_URL`: the ERP's public image URL, e.g. `https://media.zionankara.com`
    - `CATALOGUE_SOURCE`: `local` or `erp` (read the checklist above before choosing `erp`)
 3. Scope **Preview** to a test store, or leave the ERP vars unset there, so previews don't send enquiries to the live inbox.
 4. Redeploy. Env changes only take effect on a new deployment.
