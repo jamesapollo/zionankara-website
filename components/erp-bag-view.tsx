@@ -2,20 +2,35 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { getDeliveryZones } from "@/app/(checkout)/checkout/actions";
+import { bagQuoteZoneId } from "@/lib/checkout";
+import type { DeliveryZone } from "@/lib/erp/types";
 import { removeErpLine, setErpLineQuantity, useErpBag } from "@/lib/erp-bag-store";
 import { erpBagCount } from "@/lib/erp-bag";
-import { useFormatPrice, useHydrated } from "@/lib/store";
+import { useHydrated } from "@/lib/store";
 import { Breadcrumbs } from "./breadcrumbs";
 import { ButtonLink } from "./button-link";
 import { QuantityStepper } from "./quantity-stepper";
-import { kes, useErpQuote } from "./use-erp-quote";
+import { formatKes, kes, useErpQuote } from "./use-erp-quote";
 
 /** The bag for ERP products: lines from the browser, prices and availability from the ERP. */
 export function ErpBagView() {
   const bag = useErpBag();
   const hydrated = useHydrated();
-  const format = useFormatPrice();
-  const { result, loading } = useErpQuote(bag, "KE", null);
+  const format = formatKes;
+  // The ERP needs a zone to quote when Kenya has active zones; the bag shows the subtotal only.
+  const [zones, setZones] = useState<DeliveryZone[] | null | undefined>(undefined);
+  useEffect(() => {
+    let cancelled = false;
+    getDeliveryZones("KE")
+      .catch(() => null)
+      .then((z) => !cancelled && setZones(z));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const { result, loading } = useErpQuote(zones === undefined ? [] : bag, "KE", bagQuoteZoneId(zones));
   const count = erpBagCount(bag);
 
   const quote = result?.kind === "ok" ? result.quote : null;

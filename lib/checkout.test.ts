@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { ErpBagLine } from "./erp-bag";
 import {
+  bagQuoteZoneId,
   CHECKOUT_COUNTRIES,
+  freshResult,
+  settle,
   classifyOrderResponse,
   classifyQuote,
   nextIdempotencyKey,
@@ -169,7 +172,7 @@ describe("classifyOrderResponse", () => {
       kind: "error",
       message: "You've placed a few orders — please try again in a little while.",
     });
-    expect(classifyOrderResponse(409, { code: "idempotency_conflict" }, bag).kind).toBe("error");
+    expect(classifyOrderResponse(409, { code: "other" }, bag).kind).toBe("error");
   });
 });
 
@@ -182,5 +185,33 @@ describe("nextIdempotencyKey", () => {
     expect(key).toMatch(/^[A-Za-z0-9]{32}$/);
     expect(key).not.toBe("a".repeat(32));
     expect(nextIdempotencyKey(null, "retry")).toMatch(/^[A-Za-z0-9]{32}$/);
+  });
+});
+
+describe("review fixes", () => {
+  it("bagQuoteZoneId quotes the bag with the first zone, or none when the country has no zones", () => {
+    expect(bagQuoteZoneId([{ id: 7, name: "CBD", fee: kes("300.00") }, { id: 8, name: "Rest", fee: kes("500.00") }])).toBe(7);
+    expect(bagQuoteZoneId([])).toBeNull();
+    expect(bagQuoteZoneId(null)).toBeNull();
+  });
+
+  it("settle turns a rejected call into a retryable reply", async () => {
+    await expect(settle(Promise.reject(new Error("offline")))).resolves.toEqual({ status: 0, data: null });
+    await expect(settle(Promise.resolve({ status: 201, data: 1 }))).resolves.toEqual({ status: 201, data: 1 });
+  });
+
+  it("freshResult hides a result quoted for different inputs", () => {
+    const stored = { key: "a", result: { kind: "error" as const, message: "x" } };
+    expect(freshResult(stored, "a")).toBe(stored.result);
+    expect(freshResult(stored, "b")).toBeNull();
+    expect(freshResult(null, "a")).toBeNull();
+  });
+
+  it("classifyOrderResponse maps idempotency_conflict to already_placed", () => {
+    expect(classifyOrderResponse(409, { code: "idempotency_conflict", message: "x" }, bag).kind).toBe("already_placed");
+  });
+
+  it("nextIdempotencyKey keeps the key after already_placed so it never creates a second order", () => {
+    expect(nextIdempotencyKey("b".repeat(32), "already_placed")).toBe("b".repeat(32));
   });
 });

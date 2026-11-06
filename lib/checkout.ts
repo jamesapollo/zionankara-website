@@ -1,5 +1,5 @@
 import type { ErpBagLine } from "./erp-bag";
-import type { CheckoutQuote, OrderBody, PlacedOrder } from "./erp/types";
+import type { CheckoutQuote, DeliveryZone, OrderBody, PlacedOrder } from "./erp/types";
 
 const regionName = new Intl.DisplayNames(["en"], { type: "region" });
 
@@ -27,6 +27,8 @@ export const RATE_LIMITED = "You've placed a few orders — please try again in 
 export const UNREACHABLE = "We couldn't reach the shop. Please try again.";
 export const ORDER_FAILED = "We couldn't place your order. Please try again.";
 export const PENDING_QUOTE = "We'll contact you with the delivery cost.";
+export const ALREADY_PLACED =
+  "It looks like your order already went through. We'll contact you to confirm payment and delivery — please don't place it again.";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const tooLong = (value: string, max: number) => value.trim().length > max;
@@ -122,6 +124,7 @@ export function classifyQuote(status: number, data: unknown, bag: ErpBagLine[]):
 export type OrderResult =
   | { kind: "placed"; order: PlacedOrder }
   | { kind: "prices_changed" }
+  | { kind: "already_placed"; message: string }
   | { kind: "out_of_stock"; unavailable: number[] }
   | { kind: "invalid"; errors: BuyerErrors; message?: string }
   | { kind: "retry"; message: string }
@@ -147,7 +150,12 @@ export function classifyOrderResponse(status: number, data: unknown, bag: ErpBag
     const order = body.data as PlacedOrder | undefined;
     return typeof order?.reference === "string" ? { kind: "placed", order } : { kind: "error", message: ORDER_FAILED };
   }
-  if (status === 409) return body.code === "prices_changed" ? { kind: "prices_changed" } : { kind: "error", message: ORDER_FAILED };
+  if (status === 409) {
+    if (body.code === "prices_changed") return { kind: "prices_changed" };
+    // Same key, different body: an earlier attempt with this key already created the order.
+    if (body.code === "idempotency_conflict") return { kind: "already_placed", message: ALREADY_PLACED };
+    return { kind: "error", message: ORDER_FAILED };
+  }
   if (status === 429) return { kind: "error", message: RATE_LIMITED };
   if (status === 0 || status >= 500) return { kind: "retry", message: UNREACHABLE };
   if (status === 422) {
@@ -168,8 +176,30 @@ export function classifyOrderResponse(status: number, data: unknown, bag: ErpBag
   return { kind: "error", message: ORDER_FAILED };
 }
 
-/** One key per checkout attempt; a retry after a transient failure reuses it so the ERP never creates two orders. */
+/**
+ * One key per checkout attempt. A retry after a transient failure reuses it, and so does any click after
+ * `already_placed`, so the ERP never creates two orders (a changed body then answers idempotency_conflict).
+ */
 export function nextIdempotencyKey(previous: string | null, lastResult: string | null): string {
-  if (previous && lastResult === "retry") return previous;
+  if (previous && (lastResult === "retry" || lastResult === "already_placed")) return previous;
   return crypto.randomUUID().replaceAll("-", "");
+}
+
+/** Zone the bag quotes with: the ERP requires one when the country has active zones (the bag shows the subtotal only). */
+export function bagQuoteZoneId(zones: DeliveryZone[] | null | undefined): number | null {
+  return zones && zones.length > 0 ? zones[0].id : null;
+}
+
+/** A server-action call that never rejects: a failed request from the browser becomes a retryable status 0. */
+export async function settle<T extends { status: number; data: unknown }>(call: Promise<T>): Promise<T | { status: 0; data: null }> {
+  try {
+    return await call;
+  } catch {
+    return { status: 0, data: null };
+  }
+}
+
+/** The stored result only when it was quoted for the current inputs; otherwise it is stale and must not be shown or used. */
+export function freshResult<R>(stored: { key: string; result: R } | null, key: string): R | null {
+  return stored && stored.key === key ? stored.result : null;
 }

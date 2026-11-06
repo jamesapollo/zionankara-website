@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { getDeliveryZones, submitOrder } from "@/app/(checkout)/checkout/actions";
 import {
   CHECKOUT_COUNTRIES,
+  settle,
   classifyOrderResponse,
   nextIdempotencyKey,
   orderBody,
@@ -17,20 +18,20 @@ import {
 } from "@/lib/checkout";
 import { clearErpBag, useErpBag } from "@/lib/erp-bag-store";
 import type { DeliveryZone } from "@/lib/erp/types";
-import { useFormatPrice, useHydrated } from "@/lib/store";
+import { useHydrated } from "@/lib/store";
 import { ButtonLink } from "./button-link";
 import { ChoiceCard, fieldLabel, input, Step, TextField } from "./checkout-form";
-import { kes, useErpQuote } from "./use-erp-quote";
+import { formatKes, kes, useErpQuote } from "./use-erp-quote";
 
 const EMPTY: BuyerFields = { first: "", last: "", phone: "", email: "", address1: "", address2: "", city: "", region: "", postal: "", country: "KE" };
 
-type Confirmation = { reference: string; firstName: string; phone: string; email: string };
+type Confirmation = { reference: string | null; firstName: string; phone: string; email: string; note?: string };
 
 /** Checkout for ERP products: delivery from the ERP's zones, totals from the ERP, no online payment. */
 export function ErpCheckoutForm() {
   const bag = useErpBag();
   const hydrated = useHydrated();
-  const format = useFormatPrice();
+  const format = formatKes;
   const [fields, setFields] = useState<BuyerFields>(EMPTY);
   const [zones, setZones] = useState<DeliveryZone[] | null | undefined>(undefined); // undefined: loading
   const [zoneId, setZoneId] = useState<number | null>(null);
@@ -44,7 +45,9 @@ export function ErpCheckoutForm() {
 
   useEffect(() => {
     let cancelled = false;
-    getDeliveryZones(fields.country).then((z) => {
+    getDeliveryZones(fields.country)
+      .catch(() => null)
+      .then((z) => {
       if (cancelled) return;
       setZones(z);
       setZoneId(z && z.length > 0 ? z[0].id : null);
@@ -76,7 +79,7 @@ export function ErpCheckoutForm() {
     const key = nextIdempotencyKey(attempt.key, attempt.last);
     setPlacing(true);
     setMessage("");
-    const reply = await submitOrder(orderBody(bag, fields, pendingQuote ? null : zoneId, quote.subtotal.amount), key);
+    const reply = await settle(submitOrder(orderBody(bag, fields, pendingQuote ? null : zoneId, quote.subtotal.amount), key));
     const outcome = classifyOrderResponse(reply.status, reply.data, bag);
     setAttempt({ key, last: outcome.kind });
     setPlacing(false);
@@ -84,6 +87,11 @@ export function ErpCheckoutForm() {
     switch (outcome.kind) {
       case "placed":
         setDone({ reference: outcome.order.reference, firstName: fields.first.trim(), phone: fields.phone.trim(), email: fields.email.trim() });
+        clearErpBag();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      case "already_placed":
+        setDone({ reference: null, firstName: fields.first.trim(), phone: fields.phone.trim(), email: "", note: outcome.message });
         clearErpBag();
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
@@ -110,11 +118,15 @@ export function ErpCheckoutForm() {
         <span aria-hidden className="flex size-16 items-center justify-center rounded-full bg-tint text-[26px] text-accent">
           ✓
         </span>
-        <span className="text-label font-normal uppercase tracking-[0.28em] text-accent">Order {done.reference}</span>
+        {done.reference && <span className="text-label font-normal uppercase tracking-[0.28em] text-accent">Order {done.reference}</span>}
         <h2 className="font-display text-[clamp(40px,4.4vw,60px)] leading-[1.05]">Thank you, {done.firstName}.</h2>
         <p className="max-w-[480px] text-base leading-[1.75] text-copy">
-          We&apos;ll contact you on {done.phone} to confirm payment and delivery.
-          {done.email && ` A copy of your order has been sent to ${done.email}.`}
+          {done.note ?? (
+            <>
+              We&apos;ll contact you on {done.phone} to confirm payment and delivery.
+              {done.email && ` A copy of your order has been sent to ${done.email}.`}
+            </>
+          )}
         </p>
         <ButtonLink href="/collections" pad="mt-3 px-[34px] py-[17px]">
           Continue shopping
