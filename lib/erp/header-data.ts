@@ -1,5 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
+import { ERP_TAG } from "./revalidate";
 import { catalogueSource } from "@/lib/catalogue-source";
 import { categories } from "@/lib/catalog";
 import { erpGet } from "./client";
@@ -28,7 +29,7 @@ function reportOnce(what: string, error: unknown) {
 async function fetchContact(): Promise<ContactDetails | null> {
   "use cache";
   cacheLife({ stale: 300, revalidate: 300, expire: 3600 });
-  cacheTag("store");
+  cacheTag(ERP_TAG, "store");
   try {
     return ((await erpGet<{ data: ErpStore }>("/api/v1/storefront/store")) as { data: ErpStore }).data.contact ?? null;
   } catch (error) {
@@ -43,7 +44,7 @@ const COLLECTIONS_ONLY: CategoryRowItem[] = [{ href: "/collections", label: "Col
 async function fetchNav(): Promise<CategoryRowItem[]> {
   "use cache";
   cacheLife({ stale: 300, revalidate: 300, expire: 3600 });
-  cacheTag("category-nav");
+  cacheTag(ERP_TAG, "category-nav");
   try {
     const items = ((await erpGet<{ data: NavItem[] }>("/api/v1/storefront/category-nav")) as { data: NavItem[] }).data.map((item) => ({
       href: categoryHref(item.slug),

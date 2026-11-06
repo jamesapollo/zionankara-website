@@ -1,5 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
+import { ERP_TAG } from "./revalidate";
 import { notFound, permanentRedirect } from "next/navigation";
 import { ErpError, erpGet } from "./client";
 import type {
@@ -93,28 +94,28 @@ export const productHref = (slug: string) => `/products/${encodeURIComponent(slu
 export async function getCategoryNav(): Promise<NavItem[]> {
   "use cache";
   cacheLife({ stale: 300, revalidate: 300, expire: 3600 });
-  cacheTag("category-nav");
+  cacheTag(ERP_TAG, "category-nav");
   return (await read<{ data: NavItem[] }>("/api/v1/storefront/category-nav")).data;
 }
 
 export async function getCategoryTree(): Promise<CategoryNode[]> {
   "use cache";
   cacheLife({ stale: 300, revalidate: 300, expire: 3600 });
-  cacheTag("category-nav", "categories");
+  cacheTag(ERP_TAG, "category-nav", "categories");
   return (await read<{ data: CategoryNode[] }>("/api/v1/storefront/categories")).data;
 }
 
 async function fetchCategory(slug: string): Promise<Lookup<CategoryDetail>> {
   "use cache";
   cacheLife({ stale: 300, revalidate: 300, expire: 3600 });
-  cacheTag(`category:${slug}`);
+  cacheTag(ERP_TAG, `category:${slug}`);
   return lookup<CategoryDetail>(`/api/v1/storefront/categories/${encodeURIComponent(slug)}`);
 }
 
 async function fetchProducts(params: ListParams): Promise<Lookup<Paginated<ProductListItem>>> {
   "use cache";
   cacheLife({ stale: 300, revalidate: 300, expire: 3600 });
-  cacheTag("products", ...(params.category ? [`category:${params.category}`] : []));
+  cacheTag(ERP_TAG, "products", ...(params.category ? [`category:${params.category}`] : []));
   try {
     return { kind: "found", data: await read<Paginated<ProductListItem>>(`/api/v1/storefront/products${qs(params)}`) };
   } catch (e) {
@@ -127,7 +128,7 @@ async function fetchProducts(params: ListParams): Promise<Lookup<Paginated<Produ
 async function fetchFilters(params: FilterParams): Promise<Lookup<ProductFilters>> {
   "use cache";
   cacheLife({ stale: 300, revalidate: 300, expire: 3600 });
-  cacheTag("products", ...(params.category ? [`category:${params.category}`] : []));
+  cacheTag(ERP_TAG, "products", ...(params.category ? [`category:${params.category}`] : []));
   try {
     return { kind: "found", data: await read<ProductFilters>(`/api/v1/storefront/product-filters${qs(params)}`) };
   } catch (e) {
@@ -139,7 +140,7 @@ async function fetchFilters(params: FilterParams): Promise<Lookup<ProductFilters
 async function fetchProduct(slug: string): Promise<Lookup<ProductDetail>> {
   "use cache";
   cacheLife({ stale: 300, revalidate: 300, expire: 3600 });
-  cacheTag(`product:${slug}`);
+  cacheTag(ERP_TAG, `product:${slug}`);
   return lookup<ProductDetail>(`/api/v1/storefront/products/${encodeURIComponent(slug)}`);
 }
 

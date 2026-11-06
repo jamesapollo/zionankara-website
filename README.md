@@ -33,6 +33,7 @@ All of these are server-only. Never prefix them with `NEXT_PUBLIC_`.
 - `ERP_STOREFRONT_HOST`: the customer-facing hostname the ERP uses to resolve the store. Required for cached catalogue reads. Production sets it to the live domain, which must be a verified store domain in the ERP. Local dev uses a domain registered in the ERP.
 - `ERP_MEDIA_URL`: the base URL the ERP serves product images from (the ERP's `PUBLIC_DISK_URL`), e.g. `https://media.zionankara.com`. These hosts are the only ones `next/image` accepts. Separate several with commas. If unset, it defaults to `https://media.zionankara.com`. It is read when the config loads, so a change needs a dev restart or a rebuild. Under `next dev` only, a `localhost` host is also allowed past Next's private-IP check.
 - `CATALOGUE_SOURCE`: `local` (default, bundled data) or `erp`. Matching ignores case and surrounding spaces (`ERP ` works); any other value counts as `local`.
+- `REVALIDATE_SECRET`: shared secret the ERP signs change notices with (see [Caching](#caching)). Optional: without it `/api/revalidate` answers `503` and changes appear within about 5 minutes.
 
 With or without `CATALOGUE_SOURCE=erp`, these always come from the ERP when configured: the header contact strip, footer contact and follow links, the Contact page details, and the enquiry topics and form.
 
@@ -64,7 +65,42 @@ The desktop category row below the header shows the category navigation set in t
 
 ### Caching
 
-ERP reads are cached for about 5 minutes. Dashboard changes appear on the site within about 5 minutes. There is no on-demand revalidation yet.
+ERP reads are cached for about 5 minutes. Without a change notice, a dashboard change appears after that window: the first visit after 5 minutes refreshes the data in the background and the visit after it shows the change. A deployment does not clear this either, because the build caches what the ERP returned.
+
+#### Instant updates: `POST /api/revalidate`
+
+The ERP can tell the site what changed, so the change shows on the next page load. Set the same random value as `REVALIDATE_SECRET` in Vercel Production and in the ERP (for example `openssl rand -hex 32`), then have the ERP send this after saving:
+
+```
+POST https://www.zionankara.com/api/revalidate
+Content-Type: application/json
+X-Revalidate-Timestamp: <unix seconds>
+X-Revalidate-Signature: <hex HMAC-SHA256 of "<timestamp>.<raw body>" with REVALIDATE_SECRET>
+
+{"type": "category", "slugs": ["gowns"]}
+```
+
+| `type` | Send when | Clears |
+| --- | --- | --- |
+| `store` | Contact details or social links change | Header strip, footer contact, Contact page |
+| `category` | A category is created, renamed, reordered, hidden or deleted | Category row, collection tiles, and each category in `slugs` with its listing. After a rename, send the old and new slug |
+| `product` | A product is created, edited, priced, restocked, hidden or deleted | Every product listing, and each product page in `slugs` |
+| `all` | Bulk imports, or when unsure | Everything read from the ERP |
+
+`slugs` is optional (up to 100). The timestamp must be within 5 minutes of the site's clock. Responses: `200 {"revalidated":[...]}`, `400` bad body, `401` bad or stale signature, `503` `REVALIDATE_SECRET` not set.
+
+Laravel example:
+
+```php
+$body = json_encode(['type' => 'category', 'slugs' => [$category->slug]]);
+$ts = (string) time();
+Http::withHeaders([
+    'X-Revalidate-Timestamp' => $ts,
+    'X-Revalidate-Signature' => hash_hmac('sha256', "{$ts}.{$body}", config('services.storefront.revalidate_secret')),
+])->withBody($body, 'application/json')->timeout(5)->post('https://www.zionankara.com/api/revalidate');
+```
+
+Send it after the database change commits (for example from a queued job), and don't fail the dashboard save if the call fails: the 5-minute cache still catches up.
 
 ### Without ERP configuration
 
@@ -140,6 +176,7 @@ In production it is `www.zionankara.com`. The bare `zionankara.com` redirects th
    - `ERP_STOREFRONT_HOST`: the live domain from step 1, as a bare hostname
    - `ERP_MEDIA_URL`: the ERP's public image URL, e.g. `https://media.zionankara.com`
    - `CATALOGUE_SOURCE`: `local` or `erp` (read the checklist above before choosing `erp`)
+   - `REVALIDATE_SECRET`: the same value the ERP signs change notices with (optional, see [Caching](#caching))
 3. Scope **Preview** to a test store, or leave the ERP vars unset there, so previews don't send enquiries to the live inbox.
 4. Redeploy. Env changes only take effect on a new deployment.
 5. On the live site, check the contact strip, the footer contact details and the Contact page form. Then send one test enquiry.
