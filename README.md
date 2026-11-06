@@ -37,7 +37,17 @@ All of these are server-only. Never prefix them with `NEXT_PUBLIC_`.
 
 With or without `CATALOGUE_SOURCE=erp`, these always come from the ERP when configured: the header contact strip, footer contact and follow links, the Contact page details, and the enquiry topics and form.
 
-`CATALOGUE_SOURCE=erp` switches the home sections, collections, category, product pages and the category row to ERP data. Under `erp`, the bag and checkout show "Online ordering is coming soon".
+`CATALOGUE_SOURCE=erp` switches the home sections, collections, category, product pages and the category row to ERP data, and turns on ERP ordering.
+
+### Ordering under `erp`
+
+Shoppers add ERP variants to the bag (kept in the browser under `zionankara:erp-bag:v1`, separate from the bundled-catalogue bag) and place real orders in the ERP. **No payment is taken online**: the owner gets the order in the dashboard and confirms payment and delivery with the buyer on WhatsApp or by phone.
+
+- Prices, stock, delivery fee and totals always come from the ERP (`POST /checkout/validate`); the bag and checkout re-quote when the bag, country or delivery option changes.
+- Delivery options are the ERP's active delivery zones for the chosen country. A country with no active zones gets "We'll contact you with the delivery cost"; the buyer must then give an email and a phone number with the country code.
+- `POST /orders` is sent with an `Idempotency-Key`, so a double click or a retry after a network error never creates two orders. If prices changed since the quote, the ERP refuses the order and the checkout shows the new total.
+- The confirmation shows the ERP's order reference (`XXXX-XXXX-XXXX`). The ERP emails the buyer a copy when an email was given, and alerts the owner.
+- Promo codes, the VAT row and the free-delivery bar exist only in the bundled-catalogue bag.
 
 ### Category row under `erp`
 
@@ -54,7 +64,9 @@ The desktop category row below the header shows the category navigation set in t
 - [ ] Use a remote/shared cache handler (`'use cache: remote'`) for the ERP readers before high traffic. The default in-memory cache is per instance and ERP reads fan out per request.
 - [ ] The ERP is reachable during deploys. A failed nav or strip read is cached for about 5 minutes.
 - [ ] Legacy local slugs (e.g. `/collections/gowns`, `/products/<local-slug>`) are redirected to their ERP equivalents in `next.config` redirects, or the ERP slugs match them.
-- [ ] ERP env is scoped so preview deployments do not post enquiries into the live inbox (or previews point at a test store).
+- [ ] ERP env is scoped so preview deployments do not post enquiries or orders into the live store (or previews point at a test store).
+- [ ] Delivery zones for Kenya are set up and active on the store in the ERP, with the right fees.
+- [ ] Place one test order on the live site; check it reaches the dashboard and the owner's order alert arrives, then cancel it in the dashboard.
 
 ### Cutover to the ERP catalogue
 

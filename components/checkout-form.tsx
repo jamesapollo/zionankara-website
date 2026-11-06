@@ -44,9 +44,9 @@ const requiredFields = {
 
 type Fields = Record<keyof typeof requiredFields | "region" | "postal", string> & { country: string; news: boolean };
 
-const input =
+export const input =
   "h-[54px] border border-line-strong bg-white px-4 text-body outline-none focus:border-ink aria-invalid:border-error";
-const fieldLabel = "text-label font-medium uppercase tracking-[0.16em]";
+export const fieldLabel = "text-label font-medium uppercase tracking-[0.16em]";
 
 export function CheckoutForm() {
   const { bag, promoCode } = useStore();
@@ -330,7 +330,7 @@ export function CheckoutForm() {
   );
 }
 
-function Step({
+export function Step({
   number,
   title,
   aside,
@@ -359,11 +359,12 @@ function Step({
   );
 }
 
-function TextField({
+export function TextField({
   label,
   value,
   onChange,
   invalid,
+  error,
   type = "text",
   ...rest
 }: {
@@ -371,6 +372,8 @@ function TextField({
   value: string;
   onChange: (value: string) => void;
   invalid?: true;
+  /** Message shown under the field; also marks it invalid. */
+  error?: string;
   type?: string;
   placeholder?: string;
   autoComplete?: string;
@@ -378,12 +381,20 @@ function TextField({
   return (
     <label className="flex flex-col gap-2">
       <span className={fieldLabel}>{label}</span>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} aria-invalid={invalid} className={input} {...rest} />
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-invalid={invalid ?? (error ? true : undefined)}
+        className={input}
+        {...rest}
+      />
+      {error && <span className="text-small text-error">{error}</span>}
     </label>
   );
 }
 
-function ChoiceCard({
+export function ChoiceCard({
   name,
   checked,
   onChange,

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { CheckoutForm } from "@/components/checkout-form";
-import { OrderingPaused } from "@/components/ordering-paused";
+import { ErpCheckoutForm } from "@/components/erp-checkout-form";
 import { catalogueSource } from "@/lib/catalogue-source";
 
 export const metadata: Metadata = {
@@ -10,8 +10,6 @@ export const metadata: Metadata = {
 };
 
 export default function CheckoutPage() {
-  if (catalogueSource() === "erp") return <OrderingPaused trail={[{ label: "Home", href: "/" }, { label: "Checkout" }]} />;
-
   return (
     <>
       <section className="border-b border-line">
@@ -20,7 +18,7 @@ export default function CheckoutPage() {
           <h1 className="font-display text-[clamp(44px,5vw,72px)] leading-none">Checkout</h1>
         </div>
       </section>
-      <CheckoutForm />
+      {catalogueSource() === "erp" ? <ErpCheckoutForm /> : <CheckoutForm />}
     </>
   );
 }
