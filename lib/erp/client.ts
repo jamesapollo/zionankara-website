@@ -62,6 +62,7 @@ async function signedFetch(
   method: "GET" | "POST",
   body: string,
   clientIp: string,
+  extraHeaders: Record<string, string> = {},
 ): Promise<Response> {
   const cfg = config();
   const url = new URL(path, cfg.baseUrl);
@@ -82,6 +83,7 @@ async function signedFetch(
     "X-Storefront-Timestamp": String(timestamp),
     "X-Storefront-Signature": signature,
   });
+  for (const [name, value] of Object.entries(extraHeaders)) headers.set(name, value);
   if (body !== "") headers.set("Content-Type", "application/json");
   try {
     return await fetch(url, {
@@ -140,9 +142,19 @@ export async function erpGet<T>(
 export async function erpPost<T>(
   path: string,
   body: unknown,
-  opts: { clientIp: string },
+  opts: { clientIp: string; headers?: Record<string, string> },
 ): Promise<{ status: number; data: T }> {
-  const res = await signedFetch(path, "POST", JSON.stringify(body), safeIp(opts.clientIp));
+  const res = await signedFetch(path, "POST", JSON.stringify(body), safeIp(opts.clientIp), opts.headers);
+  if (res.status >= 500) throw new ErpError(`ERP responded ${res.status}`, res.status);
+  return { status: res.status, data: (await readJson(res)) as T };
+}
+
+/**
+ * Signed, uncached GET for a shopper (real client IP). Like erpPost: 4xx comes back as status + body,
+ * 5xx and network failure throw ErpError.
+ */
+export async function erpGetLive<T>(path: string, opts: { clientIp: string }): Promise<{ status: number; data: T }> {
+  const res = await signedFetch(path, "GET", "", safeIp(opts.clientIp));
   if (res.status >= 500) throw new ErpError(`ERP responded ${res.status}`, res.status);
   return { status: res.status, data: (await readJson(res)) as T };
 }

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ERP_TIMEOUT_MS, ErpError, erpConfigured, erpGet, erpPost, shopperIp } from "./client";
+import { ERP_TIMEOUT_MS, ErpError, erpConfigured, erpGet, erpGetLive, erpPost, shopperIp } from "./client";
 
 const fetchMock = vi.fn();
 
@@ -176,5 +176,29 @@ describe("shopperIp", () => {
   });
   it("maps an empty first xff entry via x-real-ip", () => {
     expect(ip({ "x-forwarded-for": " , 1.2.3.4", "x-real-ip": "198.51.100.4" })).toBe("198.51.100.4");
+  });
+});
+
+describe("erpPost extra headers", () => {
+  it("erpPost sends extra headers and still signs", async () => {
+    fetchMock.mockResolvedValue(json({ data: {} }, 201));
+    await erpPost("/x", {}, { clientIp: "1.2.3.4", headers: { "Idempotency-Key": "k".repeat(16) } });
+    const h = new Headers(fetchMock.mock.calls[0][1].headers);
+    expect(h.get("Idempotency-Key")).toBe("k".repeat(16));
+    expect(h.get("X-Storefront-Signature")).toMatch(/^[0-9a-f]{64}$/);
+    expect(h.get("X-Storefront-Client-IP")).toBe("1.2.3.4");
+  });
+});
+
+describe("erpGetLive", () => {
+  it("returns status and body without throwing on 404, with the shopper IP", async () => {
+    fetchMock.mockResolvedValue(json({ message: "Not found." }, 404));
+    expect(await erpGetLive("/y", { clientIp: "5.6.7.8" })).toEqual({ status: 404, data: { message: "Not found." } });
+    const h = new Headers(fetchMock.mock.calls[0][1].headers);
+    expect(h.get("X-Storefront-Client-IP")).toBe("5.6.7.8");
+  });
+  it("throws ErpError on 5xx", async () => {
+    fetchMock.mockResolvedValue(json({}, 503));
+    await expect(erpGetLive("/y", { clientIp: "5.6.7.8" })).rejects.toMatchObject({ status: 503 });
   });
 });
