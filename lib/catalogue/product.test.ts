@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Price, ProductImage, Variant } from "@/lib/erp/types";
-import { defaultSelection, galleryFor, priceFor, selectValue, selectedVariant, soldOutValue } from "./product";
+import { defaultSelection, firstUnchosen, galleryFor, priceFor, selectValue, selectedVariant, soldOutValue, variantLabel } from "./product";
 
 const money = (amount: string) => ({ amount, currency: "KES" });
 const price = (current: string, original = current): Price => ({
@@ -123,5 +123,29 @@ describe("priceFor", () => {
 
   it("has no struck price off offer", () => {
     expect(priceFor(price("9000.00"))).toEqual({ priceKes: 9000, wasKes: undefined });
+  });
+});
+
+describe("variantLabel", () => {
+  const types = [
+    { name: "Colour", values: [{ id: 1, value: "Red" }, { id: 2, value: "Blue" }] },
+    { name: "Size", values: [{ id: 3, value: "M" }] },
+  ];
+  it("joins the chosen values in option-type order", () => {
+    expect(variantLabel(types, [3, 2])).toBe("Blue / M");
+  });
+  it("is empty for a product without options", () => {
+    expect(variantLabel([], [])).toBe("");
+  });
+});
+
+describe("firstUnchosen", () => {
+  const types = [
+    { name: "Colour", values: [{ id: 1, value: "Red" }] },
+    { name: "Size", values: [{ id: 3, value: "M" }] },
+  ];
+  it("names the first option type with no chosen value", () => {
+    expect(firstUnchosen(types, [1])).toBe("Size");
+    expect(firstUnchosen(types, [1, 3])).toBeUndefined();
   });
 });

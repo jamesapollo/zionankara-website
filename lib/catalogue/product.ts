@@ -59,3 +59,15 @@ export function soldOutValue(variants: Variant[], selection: number[], typeValue
 export function priceFor(price: Price): { priceKes: number; wasKes: number | undefined } {
   return { priceKes: Number(price.current.amount), wasKes: price.on_offer ? Number(price.original.amount) : undefined };
 }
+
+/** "Blue / M": the chosen values in option-type order (empty for a product without options). */
+export function variantLabel(optionTypes: OptionType[], selection: number[]): string {
+  const chosen = new Set(selection);
+  return optionTypes.flatMap((t) => t.values.filter((v) => chosen.has(v.id)).map((v) => v.value)).join(" / ");
+}
+
+/** Name of the first option type with nothing chosen yet, if any. */
+export function firstUnchosen(optionTypes: OptionType[], selection: number[]): string | undefined {
+  const chosen = new Set(selection);
+  return optionTypes.find((t) => !t.values.some((v) => chosen.has(v.id)))?.name;
+}

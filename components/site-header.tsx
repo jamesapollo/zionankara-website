@@ -40,7 +40,7 @@ function HeaderMarkup({
             <Logo />
           </Link>
           <div className={`flex items-center justify-end gap-[clamp(12px,2vw,24px)] ${navText}`}>
-            <HeaderControls searchHref={searchHref} />
+            <HeaderControls searchHref={searchHref} erp={catalogueSource() === "erp"} />
           </div>
         </div>
         {reserve?.categoryRow && categories.length === 0 ? <div aria-hidden className="h-[65px] border-t border-[#F1F1F1] max-nav:hidden" /> : <CategoryRow items={categories} />}

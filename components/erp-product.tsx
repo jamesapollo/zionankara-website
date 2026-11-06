@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 import { discountLabel } from "@/lib/currency";
-import { defaultSelection, galleryFor, priceFor, selectedVariant, selectValue, soldOutValue } from "@/lib/catalogue/product";
+import { defaultSelection, firstUnchosen, galleryFor, priceFor, selectedVariant, selectValue, soldOutValue, variantLabel } from "@/lib/catalogue/product";
+import { addToErpBag } from "@/lib/erp-bag-store";
 import type { ProductDetail } from "@/lib/erp/types";
 import { useFormatPrice } from "@/lib/store";
 import { ProductGallery } from "./product-gallery";
+import { QuantityStepper } from "./quantity-stepper";
 import { InfoPanels, panels } from "./product-purchase";
 
 /** Only the shipping panel: the local copy's fabric and care claims do not apply to arbitrary ERP products. */
@@ -14,10 +16,12 @@ const infoPanels = panels.filter((p) => p.title === "Shipping & returns");
 
 /**
  * The ERP product: gallery and purchase area share the chosen option values, so picking a colour
- * switches the photos. Ordering is paused until the bag moves to the ERP (round 2).
+ * switches the photos. Adding to the bag stores the variant id; the ERP prices it at checkout.
  */
 export function ErpProduct({ product }: { product: ProductDetail }) {
   const [selection, setSelection] = useState(() => defaultSelection(product.variants));
+  const [quantity, setQuantity] = useState(1);
+  const [added, setAdded] = useState(false);
   const format = useFormatPrice();
 
   const photos = galleryFor(product.images, selection).map((i, n) => ({
@@ -32,6 +36,25 @@ export function ErpProduct({ product }: { product: ProductDetail }) {
   const showFrom = !variant && product.price_varies;
   const inStock = variant ? variant.in_stock : product.in_stock;
   const description = product.description || product.short_description;
+  const missing = firstUnchosen(product.option_types, selection);
+  const canAdd = Boolean(variant?.in_stock) && !missing;
+
+  const choose = (next: number[]) => {
+    setSelection(next);
+    setAdded(false);
+  };
+  const add = () => {
+    if (!variant || !canAdd) return;
+    addToErpBag({
+      variantId: variant.id,
+      slug: product.slug,
+      title: product.title,
+      label: variantLabel(product.option_types, selection),
+      image: photos[0]?.url ?? null,
+      quantity,
+    });
+    setAdded(true);
+  };
 
   return (
     <div className="grid grid-cols-1 items-start gap-[clamp(28px,4.5vw,88px)] lg:grid-cols-[1.15fr_1fr]">
@@ -89,7 +112,7 @@ export function ErpProduct({ product }: { product: ProductDetail }) {
                         type="button"
                         aria-pressed={on}
                         aria-label={soldOut ? `${v.value}, sold out` : v.value}
-                        onClick={() => setSelection(selectValue(product.variants, product.option_types, selection, v.id))}
+                        onClick={() => choose(selectValue(product.variants, product.option_types, selection, v.id))}
                         className={`h-12 min-w-[52px] cursor-pointer border px-4 text-sm ${soldOut ? "text-subtle line-through" : ""} ${on ? "border-ink bg-ink text-white" : "border-line-strong hover:border-ink"}`}
                       >
                         {v.value}
@@ -102,13 +125,25 @@ export function ErpProduct({ product }: { product: ProductDetail }) {
           })}
 
           <div className="flex flex-col gap-3">
-            <button
-              type="button"
-              disabled
-              className="h-(--za-control-lg) cursor-not-allowed border border-line-strong bg-tint text-small font-normal uppercase tracking-button text-copy"
-            >
-              Online ordering coming soon
-            </button>
+            <div className="flex gap-3">
+              <QuantityStepper value={quantity} onChange={setQuantity} size="lg" />
+              <button
+                type="button"
+                disabled={!canAdd}
+                onClick={add}
+                className="h-(--za-control-lg) flex-1 cursor-pointer bg-ink text-small font-normal uppercase tracking-button text-white hover:bg-accent disabled:cursor-not-allowed disabled:border disabled:border-line-strong disabled:bg-tint disabled:text-copy"
+              >
+                {missing ? `Choose ${missing.toLowerCase()}` : canAdd ? "Add to bag" : "Sold out"}
+              </button>
+            </div>
+            {added && (
+              <p role="status" className="flex flex-wrap gap-x-3 text-sm">
+                Added to your bag.
+                <Link href="/bag" className="border-b border-current hover:text-accent">
+                  View bag
+                </Link>
+              </p>
+            )}
             <Link
               href={`/contact?topic=Order%20enquiry&product=${encodeURIComponent(product.slug)}`}
               className="self-start border-b border-current pb-1 text-small font-normal uppercase tracking-button hover:text-accent"
