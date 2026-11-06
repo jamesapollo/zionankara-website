@@ -18,7 +18,9 @@ const image = (url: string, option_value_ids: number[] = [], is_main = false): P
   is_main,
   option_value_ids,
 });
+let nextVariantId = 1;
 const variant = (sku: string, option_value_ids: number[], over: Partial<Variant> = {}): Variant => ({
+  id: nextVariantId++,
   sku,
   price: price("9000.00"),
   option_value_ids,

@@ -82,6 +82,8 @@ export type ProductListItem = {
 };
 
 export type Variant = {
+  /** The id checkout and order endpoints take as `variant_id`. */
+  id: number;
   sku: string;
   price: Price;
   option_value_ids: number[];
@@ -139,3 +141,51 @@ export type Paginated<T> = {
 
 /** Body returned (with HTTP 200) when a slug has been renamed. */
 export type ErpRedirect = { redirect: { slug: string; status: 301 } };
+
+// --- checkout (POST /checkout/validate, POST /orders, GET /delivery-zones) ---
+
+export type DeliveryZone = { id: number; name: string; fee: Money };
+
+export type QuoteLine = {
+  variant_id: number;
+  product_name: string;
+  variant_label: string;
+  sku: string;
+  quantity: number;
+  unit_price: Money;
+  unit_price_paid: Money;
+  line_total: Money;
+  available: boolean;
+};
+
+export type CheckoutQuote = {
+  lines: QuoteLine[];
+  subtotal: Money;
+  delivery: { zone_name: string | null; fee: Money | null; pending_quote: boolean };
+  grand_total: Money;
+  delivery_fee_pending: boolean;
+};
+
+/** The parts of the 201 order response the site shows. */
+export type PlacedOrder = {
+  reference: string;
+  status: string;
+  subtotal: Money;
+  grand_total: Money;
+  delivery_fee_pending: boolean;
+};
+
+export type OrderBody = {
+  lines: { variant_id: number; quantity: number }[];
+  buyer_name: string;
+  buyer_phone: string;
+  buyer_email: string | null;
+  address_line1: string;
+  address_line2: string | null;
+  city: string;
+  region: string | null;
+  postal_code: string | null;
+  country: string;
+  delivery_zone_id: number | null;
+  expected_subtotal: string;
+};
