@@ -113,7 +113,7 @@ function FooterLegal() {
       {admin && (
         <>
           {" · "}
-          <a href={admin} title="Staff sign in" rel="nofollow" className="text-subtle hover:text-accent-soft">
+          <a href={admin} target="_blank" rel="nofollow noopener noreferrer" title="Staff sign in" className="text-subtle hover:text-accent-soft">
             Admin
           </a>
         </>
