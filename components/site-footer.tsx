@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { adminUrl } from "@/lib/admin-url";
 import { mailHref, socialLinks, telHref, whatsappHref } from "@/lib/contact";
 import { catalogueSource } from "@/lib/catalogue-source";
 import { getCategoryRowItems, getContactOrNull, type CategoryRowItem } from "@/lib/erp/header-data";
@@ -96,9 +97,27 @@ function FooterMarkup({ contact, categoryItems }: { contact: ContactDetails | nu
         </div>
         <div className="flex flex-wrap justify-between gap-4 border-t border-[#2a2a2a] pt-7 text-small text-subtle">
           <span>© 2026 Zionankara. All rights reserved.</span>
-          <span>Worldwide shipping · Privacy · Terms</span>
+          <FooterLegal />
         </div>
       </div>
     </footer>
+  );
+}
+
+/** Bottom-right line from the design, ending in the staff "Admin" link to the ERP dashboard. */
+function FooterLegal() {
+  const admin = adminUrl();
+  return (
+    <span className="flex flex-wrap gap-2">
+      Worldwide shipping · Privacy · Terms
+      {admin && (
+        <>
+          {" · "}
+          <a href={admin} title="Staff sign in" rel="nofollow" className="text-subtle hover:text-accent-soft">
+            Admin
+          </a>
+        </>
+      )}
+    </span>
   );
 }
