@@ -32,6 +32,34 @@ export function whatsappHref(whatsapp: string | null | undefined): string | null
   return digits ? `https://wa.me/${digits}` : null;
 }
 
+export type WhatsAppOrder = {
+  title: string;
+  /** Lines such as "Size: UK 10"; empty ones are skipped. */
+  details: string[];
+  quantity: number;
+  /** Already formatted, e.g. "KES 19,800". */
+  price: string;
+  url: string;
+};
+
+/** `wa.me` link that opens a chat with the store, pre-filled with the order (design: "Order on WhatsApp"). */
+export function whatsappOrderHref(whatsapp: string | null | undefined, order: WhatsAppOrder): string | null {
+  const base = whatsappHref(whatsapp);
+  if (!base) return null;
+  const text = [
+    "Hello Zionankara, I'd like to order:",
+    "",
+    order.title,
+    ...order.details.filter((d) => d.trim() !== ""),
+    `Quantity: ${order.quantity}`,
+    `Price: ${order.price}`,
+    `Link: ${order.url}`,
+    "",
+    "Please let me know how to proceed.",
+  ].join("\n");
+  return `${base}?text=${encodeURIComponent(text)}`;
+}
+
 export function mailHref(email: string | null | undefined): string | null {
   const value = clean(email);
   return value ? `mailto:${value}` : null;

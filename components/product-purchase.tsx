@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { printColours, sizes, type Product } from "@/lib/catalog";
+import { formatPrice } from "@/lib/currency";
 import { addToBag, useFormatPrice } from "@/lib/store";
 import { QuantityStepper } from "./quantity-stepper";
+import { WhatsAppOrderButton } from "./whatsapp-order-button";
 
 export const panels = [
   {
@@ -51,7 +53,7 @@ export function InfoPanels({ panels }: { panels: { title: string; body: string }
 
 const hexFor = (colour: string) => printColours.find((c) => c.id === colour)?.hex ?? "#111111";
 
-export function ProductPurchase({ product }: { product: Product }) {
+export function ProductPurchase({ product, whatsapp, url }: { product: Product; whatsapp: string | null; url: string }) {
   const format = useFormatPrice();
   const [print, setPrint] = useState(0);
   const [size, setSize] = useState(product.sizes.includes("10") ? "10" : product.sizes[0]);
@@ -141,6 +143,16 @@ export function ProductPurchase({ product }: { product: Product }) {
           <span aria-live="polite">{added ? "Added to bag ✓" : `Add to bag — ${format(product.priceKes * quantity)}`}</span>
         </button>
       </div>
+      <WhatsAppOrderButton
+        whatsapp={whatsapp}
+        order={{
+          title: product.name,
+          details: [`Print: ${product.prints[print].label}`, `Size: UK ${size}`],
+          quantity,
+          price: formatPrice(product.priceKes * quantity, "KES"),
+          url,
+        }}
+      />
 
       <ul className="flex flex-col gap-2.5 text-sm text-copy">
         <li className="flex gap-2.5">

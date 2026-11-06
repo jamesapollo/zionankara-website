@@ -7,8 +7,10 @@ import { defaultSelection, firstUnchosen, galleryFor, priceFor, selectedVariant,
 import { addToErpBag } from "@/lib/erp-bag-store";
 import type { ProductDetail } from "@/lib/erp/types";
 import { useFormatPrice } from "@/lib/store";
+import { formatPrice } from "@/lib/currency";
 import { ProductGallery } from "./product-gallery";
 import { QuantityStepper } from "./quantity-stepper";
+import { WhatsAppOrderButton } from "./whatsapp-order-button";
 import { InfoPanels, panels } from "./product-purchase";
 
 /** Only the shipping panel: the local copy's fabric and care claims do not apply to arbitrary ERP products. */
@@ -18,7 +20,7 @@ const infoPanels = panels.filter((p) => p.title === "Shipping & returns");
  * The ERP product: gallery and purchase area share the chosen option values, so picking a colour
  * switches the photos. Adding to the bag stores the variant id; the ERP prices it at checkout.
  */
-export function ErpProduct({ product }: { product: ProductDetail }) {
+export function ErpProduct({ product, whatsapp, url }: { product: ProductDetail; whatsapp: string | null; url: string }) {
   const [selection, setSelection] = useState(() => defaultSelection(product.variants));
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
@@ -136,6 +138,19 @@ export function ErpProduct({ product }: { product: ProductDetail }) {
                 {missing ? `Choose ${missing.toLowerCase()}` : canAdd ? "Add to bag" : "Sold out"}
               </button>
             </div>
+            <WhatsAppOrderButton
+              whatsapp={whatsapp}
+              order={{
+                title: product.title,
+                details: product.option_types.flatMap((t) => {
+                  const chosen = t.values.find((v) => selection.includes(v.id));
+                  return chosen ? [`${t.name}: ${chosen.value}`] : [];
+                }),
+                quantity,
+                price: formatPrice(priceKes * quantity, "KES"),
+                url,
+              }}
+            />
             {added && (
               <p role="status" className="flex flex-wrap gap-x-3 text-sm">
                 Added to your bag.

@@ -11,7 +11,9 @@ import { getCategory, getProduct, products } from "@/lib/catalog";
 import { catalogueSource } from "@/lib/catalogue-source";
 import { loadProductPage, MAX_PRODUCT_SLUG } from "@/lib/catalogue/loaders";
 import { discountLabel } from "@/lib/currency";
+import { getContactOrNull } from "@/lib/erp/header-data";
 import { getProduct as getErpProduct } from "@/lib/erp/queries";
+import { siteUrl } from "@/lib/site-url";
 
 export function generateStaticParams() {
   return products.map((product) => ({ slug: product.slug }));
@@ -78,6 +80,7 @@ async function ProductDetails({ params }: Pick<PageProps<"/products/[slug]">, "p
   const product = getProduct((await params).slug);
   if (!product) notFound();
   const category = getCategory(product.categorySlug);
+  const whatsapp = (await getContactOrNull())?.whatsapp ?? null;
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -117,7 +120,7 @@ async function ProductDetails({ params }: Pick<PageProps<"/products/[slug]">, "p
         <div className="flex flex-col gap-3.5 lg:sticky lg:top-24">
           <span className="text-label font-normal uppercase tracking-label text-accent">{category?.singular}</span>
           <h1 className="font-display text-[clamp(40px,4.4vw,64px)] leading-none">{product.name}</h1>
-          <ProductPurchase product={product} />
+          <ProductPurchase product={product} whatsapp={whatsapp} url={`${siteUrl}/products/${product.slug}`} />
         </div>
       </div>
     </div>
@@ -130,6 +133,7 @@ async function ErpProductDetails({ params }: Pick<PageProps<"/products/[slug]">,
   const { product, recommendations } = await loadProductPage(slug);
   const category = product.categories[0];
   const image = product.images.find((i) => i.is_main) ?? product.images[0];
+  const whatsapp = (await getContactOrNull())?.whatsapp ?? null;
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -160,7 +164,7 @@ async function ErpProductDetails({ params }: Pick<PageProps<"/products/[slug]">,
           { label: product.title },
         ]}
       />
-      <ErpProduct product={product} />
+      <ErpProduct product={product} whatsapp={whatsapp} url={`${siteUrl}/products/${encodeURIComponent(product.slug)}`} />
       {recommendations.length > 0 && (
         <section className="flex flex-col gap-8 border-t border-line pt-[clamp(32px,4vw,56px)]">
           <h2 className="font-display text-h2 font-normal">
