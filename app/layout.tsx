@@ -20,11 +20,11 @@ const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Ankara Dresses & African Print Clothing | Zionankara",
+    default: "Ankara Dresses & African Fashion in Kenya | Zionankara",
     template: "%s | Zionankara",
   },
   description:
-    "Shop elegant Ankara dresses and African print clothing for women — gowns, two-piece sets, kimonos and more, cut from authentic wax prints. Worldwide shipping.",
+    "Nairobi's Ankara clothing boutique: Ankara dresses, Ankara two piece sets and African inspired fashion in the best Ankara prints in Kenya. Shipped worldwide.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

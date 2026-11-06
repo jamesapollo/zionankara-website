@@ -30,7 +30,7 @@ export function CollectionPage({ title, crumb, initialCategory, initialSort, tra
             <h1 className="font-display text-[clamp(44px,5.5vw,80px)] leading-none">{title}</h1>
           </div>
           <p className="max-w-[420px] text-base leading-[1.7] text-pretty text-copy">
-            {intro ?? "Gowns, sets and everyday pieces in authentic African wax prints — cut in small batches, shipped worldwide."}
+            {intro ?? "Ankara dresses, Ankara two piece sets and everyday African inspired pieces — cut in small batches, shipped worldwide."}
           </p>
         </div>
       </section>

@@ -73,6 +73,7 @@ function FooterMarkup({ contact, categoryItems }: { contact: ContactDetails | nu
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-5">
           <div className="flex max-w-[400px] flex-col gap-5 sm:col-span-2">
             <Logo className="text-[34px] text-white" accentClassName="text-accent-soft" />
+            <p className="text-body leading-[1.7]">An Ankara shop in Nairobi, Kenya. African fashion, shipped worldwide.</p>
             <p className="text-body leading-[1.7]">Letters on new collections and private sales. Rarely, and beautifully.</p>
             <NewsletterForm />
           </div>

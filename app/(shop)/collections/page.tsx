@@ -10,7 +10,7 @@ import { sanitizeListing } from "@/lib/catalogue/params";
 import { categoryHref } from "@/lib/erp/queries";
 
 export const metadata: Metadata = {
-  title: "Shop Ankara Collections",
+  title: "Ankara Shop: Dresses, Two Piece Sets & African Prints",
   description:
     "Browse Zionankara's Ankara dresses, gowns, two-piece sets, kimonos and African print clothing. Filter by size, colour, occasion and price.",
 };

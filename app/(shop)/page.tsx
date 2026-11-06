@@ -43,8 +43,8 @@ export default function Home() {
               Heritage, <em className="text-accent">tailored</em> for the woman of now.
             </p>
             <p className="max-w-[420px] text-[clamp(16px,1.3vw,18px)] leading-[1.7] text-pretty text-[#3e3a36]">
-              Contemporary silhouettes cut from authentic Ankara wax prints — pieces made to be treasured, worn and
-              passed on.
+              Contemporary, African inspired silhouettes cut from the best Ankara prints in Kenya — pieces made to be
+              treasured, worn and passed on.
             </p>
             <div className="flex flex-wrap gap-4">
               <ButtonLink href="#new">Shop the collection</ButtonLink>
@@ -80,7 +80,7 @@ export default function Home() {
             Dressed for every <em className="text-accent-soft">occasion</em> worth remembering.
           </h2>
           <p className="max-w-[460px] text-body-lg text-[#bdbdbd]">
-            Weddings, owambe, christenings and quiet dinners — wax-print pieces finished by hand, shipped worldwide.
+            Weddings, owambe, christenings and quiet dinners — African print pieces finished by hand, shipped worldwide.
           </p>
           <div>
             <ButtonLink href={erp ? "/collections" : "/collections/gowns"} variant="on-dark" pad="px-9 py-[18px]">
@@ -125,7 +125,8 @@ export default function Home() {
               Woven in heritage, <em>worn</em> around the world.
             </h2>
             <p className="max-w-[520px] text-body-lg leading-[1.8] text-pretty text-copy">
-              Zionankara began with a simple belief: that Ankara deserves the same care as any fine textile. We source
+              Zionankara began as a small Ankara clothing boutique in Nairobi, with a simple belief: that Ankara deserves
+              the same care as any fine textile. We source
               authentic wax prints, then cut each piece in small batches with clean, modern lines — for daughters,
               mothers and grandmothers alike.
             </p>
@@ -167,7 +168,7 @@ function Collections({ tiles }: { tiles: CollectionTile[] }) {
     <section id="categories" className="border-t border-line pt-[clamp(56px,7vw,96px)] pb-[clamp(24px,3vw,40px)]">
       <div className="mx-auto mb-11 flex max-w-site flex-wrap items-end justify-between gap-6 px-(--za-gutter)">
         <h2 className={sectionTitle}>
-          Best <em>collections</em>
+          Ankara <em>collections</em>
         </h2>
         <TextLink href="/collections">All collections</TextLink>
       </div>

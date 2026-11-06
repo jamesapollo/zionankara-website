@@ -3,7 +3,7 @@ import Image from "next/image";
 import { ButtonLink } from "@/components/button-link";
 
 export const metadata: Metadata = {
-  title: { absolute: "About Zionankara | Ankara Fashion Atelier, Nairobi" },
+  title: { absolute: "About Zionankara | Ankara Clothing Boutique in Nairobi" },
   description:
     "The story behind Zionankara — authentic Ankara wax prints, cut in small batches with clean modern lines and finished by hand.",
 };
@@ -13,7 +13,7 @@ const h2 = "font-display text-h2 font-normal text-balance";
 const wrap = "mx-auto max-w-site px-(--za-gutter)";
 
 const values = [
-  ["i.", "Authentic prints", "We work only with genuine wax prints, chosen bolt by bolt for colour, weight and story."],
+  ["i.", "Authentic prints", "We work only with genuine African prints, chosen bolt by bolt for colour, weight and story."],
   ["ii.", "Small batches", "Each style is cut in limited runs — less waste, more care, and pieces that stay special."],
   ["iii.", "Made to last", "Finished by hand with lined seams and generous hems, so every garment can be passed on."],
 ] as const;
@@ -38,7 +38,7 @@ export default function AboutPage() {
           Woven in heritage, <em className="text-accent">worn</em> around the world.
         </h1>
         <p className="max-w-[560px] text-[clamp(16px,1.3vw,18px)] leading-[1.8] text-copy">
-          Zionankara is a small atelier dedicated to one idea — that Ankara deserves the same care as any fine textile.
+          Zionankara is a small Ankara shop and atelier in Nairobi, dedicated to one idea — that Ankara deserves the same care as any fine textile.
         </p>
       </section>
 
@@ -135,7 +135,7 @@ export default function AboutPage() {
         <div className="relative min-h-[clamp(380px,42vw,620px)]">
           <Image
             src="/images/hero/hero-studio.jpg"
-            alt="A woman wearing Zionankara"
+            alt="A woman wearing a Zionankara Ankara dress"
             fill
             sizes="(min-width: 960px) 50vw, 100vw"
             className="object-cover"
